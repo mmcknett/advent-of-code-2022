@@ -64,3 +64,6 @@ You can run cargo in watch mode:
 ```zsh
 cargo watch -x test
 ```
+
+### VS Code debugging
+Make sure to open the folder for the project as the root of VS Code (e.g. `code testbed`). Then you can create a `.vscode/launch.json` file very quickly from the run and debug sidebar using LLVM, and it will automatically import all the cargo configurations.
