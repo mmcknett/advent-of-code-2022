@@ -1,7 +1,7 @@
 use std::fmt::format;
 
 use utils;
-use lalrpop_util::{lalrpop_mod};
+use lalrpop_util::*;
 
 mod ast;
 use ast::Expr::{self, *};
@@ -85,4 +85,13 @@ fn commas() {
 
     assert_eq!(evaluate_all(&*ExprsParser::new().parse("2+2,   3*4").unwrap()), [4, 12]);
     assert_eq!(evaluate_all(&*ExprsParser::new().parse("2+2,   3*4,").unwrap()), [4, 12]);
+}
+
+#[test]
+fn errors() {
+    // Number is one bigger than std::i32::MAX
+    let expr = ExprsParser::new().parse("2147483648");
+    // assert_eq!(expr.err(), Some("number is too big"));
+    assert!(expr.is_err());
+    assert_eq!(expr.unwrap_err(), ParseError::User { error: "number is too big" });
 }
