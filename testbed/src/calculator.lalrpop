@@ -3,6 +3,18 @@ use crate::ast::{Expr, OpCode};
 
 grammar;
 
+pub Exprs = Comma<Expr>;
+
+Comma<T>: Vec<T> = {
+  <mut v:(<T> ",")*> <e:T?> => match e {
+    None => v,
+    Some(e) => {
+      v.push(e);
+      v
+    }
+  }
+}
+
 // Use a macro for Expr and Factor.
 Tier<Op, NextTier>: Box<Expr> = {
   Tier<Op, NextTier> Op NextTier => Box::new(Expr::Op(<>)),
@@ -23,7 +35,7 @@ FactorOp: OpCode = {
 }
 
 Term: Box<Expr> = {
-  Num => Box::new(Expr::Number(<>)),
+  Num => Box::new(Expr::N(<>)),
   "(" <Expr> ")",
 };
 

@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub enum Expr {
-  Number(i32),
+  N(i32),
   Op(Box<Expr>, OpCode, Box<Expr>),
 }
 
