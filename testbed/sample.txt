@@ -2,3 +2,4 @@
 16,1,2,0,4,2,7,1,2,14
 be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe
 edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc
+200, 1000 ->  240, 120

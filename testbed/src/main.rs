@@ -27,6 +27,10 @@ fn main() {
     for (i, puzzle) in puzzles.enumerate() {
         println!("Puzzle {}: {:?}", i+1, puzzle);
     }
+
+    // Load a 2d-coordinate line
+    let line = utils::load_line2d().next().unwrap();
+    println!("Loaded a line starting at x:{}, y:{} and ending at x:{}, y:{}", line.s.x, line.s.y, line.e.x, line.e.y);
 }
 
 fn evaluate(exp: &Expr) -> i32 {
