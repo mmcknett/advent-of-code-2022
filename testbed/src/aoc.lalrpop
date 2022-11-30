@@ -1,0 +1,18 @@
+use std::str::FromStr;
+
+use lalrpop_util::ParseError;
+
+grammar;
+
+pub CommaSepInt32s = Comma<Int32>;
+
+Comma<T>: Vec<T> = {
+  <mut v:(<T> ",")*> <e:T> => { v.push(e); v }
+}
+
+Int32: i32 = {
+  r"[0-9]+" =>? i32::from_str(<>)
+    .map_err(|_| ParseError::User {
+      error: "Number can't be parsed"
+    })
+};

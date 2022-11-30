@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use utils;
 use lalrpop_util::*;
 
@@ -12,9 +10,17 @@ lalrpop_mod!(pub calculator);
 
 use calculator::{ExprParser, ExprsParser};
 
+mod aoc_load;
+use aoc_load::loadCommaSeparatedInts;
+
 fn main() {
-    let sum = utils::add(3, 2);
-    println!("3 + 2 = {sum}");
+    // e.g. call with `cat sample.txt | cargo run`
+    let ints = loadCommaSeparatedInts();
+    println!("Loaded: {:?}", ints);
+
+    // Same thing, but from utils
+    let ints = utils::load_comma_separated_ints();
+    println!("Loaded (using utils): {:?}", ints);
 }
 
 fn evaluate(exp: &Expr) -> i32 {

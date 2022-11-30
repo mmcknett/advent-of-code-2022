@@ -1,14 +1,15 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::io::{self, BufRead};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod load;
+use load::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub fn load_comma_separated_ints() -> Vec<i32> {
+  io::stdin()
+    .lock()
+    .lines()
+    .map(
+        |line| parse_comma_separated(&line.unwrap())
+    )
+    .next()
+    .unwrap()
 }
