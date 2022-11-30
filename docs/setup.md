@@ -67,3 +67,20 @@ cargo watch -x test
 
 ### VS Code debugging
 Make sure to open the folder for the project as the root of VS Code (e.g. `code testbed`). Then you can create a `.vscode/launch.json` file very quickly from the run and debug sidebar using LLVM, and it will automatically import all the cargo configurations.
+
+## 2D Grid
+Try using the [grid crate](https://docs.rs/grid/latest/grid/index.html)!
+
+From the examples:
+
+```rust
+use grid::*;
+let mut grid = grid![[1,2,3]
+                     [4,5,6]];
+assert_eq!(grid, Grid::from_vec(vec![1,2,3,4,5,6],3));
+assert_eq!(grid.get(0,2), Some(&3));
+assert_eq!(grid[1][1], 5);
+assert_eq!(grid.size(), (2,3));
+grid.push_row(vec![7,8,9]);
+assert_eq!(grid, grid![[1,2,3][4,5,6][7,8,9]])
+```
