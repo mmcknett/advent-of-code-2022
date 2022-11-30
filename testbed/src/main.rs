@@ -21,6 +21,12 @@ fn main() {
     // Same thing, but from utils
     let ints = utils::load_comma_separated_ints();
     println!("Loaded (using utils): {:?}", ints);
+
+    // Load some lines of Day 8 puzzle data.
+    let puzzles = utils::load_day8_2021_puzzle().take(2);
+    for (i, puzzle) in puzzles.enumerate() {
+        println!("Puzzle {}: {:?}", i+1, puzzle);
+    }
 }
 
 fn evaluate(exp: &Expr) -> i32 {
