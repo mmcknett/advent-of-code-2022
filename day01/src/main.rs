@@ -1,33 +1,28 @@
 use std::io::{self, BufRead};
 
 fn main() {
-    let mut elfSums = vec![];
-    let mut sum = 0;
-    for line in io::stdin().lock().lines() {
-        match line {
-            Ok(l) => {
-                if l != "" {
-                    sum += l.parse::<i32>().unwrap();
-                } else {
-                    elfSums.push(sum);
-                    sum = 0;
-                }
-            },
-            _ => ()
+    let elves = io::stdin().lock().lines().filter_map(|r| r.ok()).fold(
+        vec![vec![]],
+        |mut elves, line| {
+            if line == "" {
+                elves.push(vec![]);
+            } else {
+                (*elves.last_mut().unwrap()).push(
+                    line.parse::<i32>().unwrap()
+                );
+            }
+            return elves;
         }
-    }
-    elfSums.push(sum);
+    );
+    let mut elf_sums: Vec<i32> = elves.iter().map(|elf| elf.iter().sum()).collect();
 
     // Now we have a list of elves, each of which is the sum of the elf's calories.
-    println!("The top elf carries: {}", elfSums.iter().max().unwrap());
+    println!("The top elf carries: {}", elf_sums.iter().max().unwrap());
     // Part 1 complete!
 
     // Part 2, find the top 3 elves.
-    elfSums.sort();
+    elf_sums.sort();
 
-    let mut topThree = 0;
-    for t in elfSums.iter().rev().take(3) {
-        topThree += t;
-    }
-    println!("The top three elves carry: {topThree}");
+    let top_three: i32 = elf_sums.iter().rev().take(3).sum();
+    println!("The top three elves carry: {top_three}");
 }
