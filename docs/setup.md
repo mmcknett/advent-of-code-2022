@@ -84,3 +84,8 @@ assert_eq!(grid.size(), (2,3));
 grid.push_row(vec![7,8,9]);
 assert_eq!(grid, grid![[1,2,3][4,5,6][7,8,9]])
 ```
+
+## Debugging file input
+Consider reading a file directly so that the program can be debugged with VS Code, rather than piping the file to the program to be read by stdin.
+
+See the `read_lines` [example](https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html).

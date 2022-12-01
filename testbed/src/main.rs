@@ -1,3 +1,5 @@
+use std::io::{self, BufRead};
+
 use utils;
 use lalrpop_util::*;
 
@@ -12,6 +14,8 @@ use calculator::{ExprParser, ExprsParser};
 
 mod aoc_load;
 use aoc_load::loadCommaSeparatedInts;
+
+use grid::*;
 
 fn main() {
     // e.g. call with `cat sample.txt | cargo run`
@@ -31,6 +35,19 @@ fn main() {
     // Load a 2d-coordinate line
     let line = utils::load_line2d().next().unwrap();
     println!("Loaded a line starting at x:{}, y:{} and ending at x:{}, y:{}", line.s.x, line.s.y, line.e.x, line.e.y);
+
+
+    // Load a 10x10 grid
+    let mut g = grid![];
+    for line in io::stdin().lock().lines().take(10) {
+        let l = line.unwrap();
+        g.push_row(l.chars().map(|c| c.to_digit(10).unwrap()).collect());
+    }
+
+    println!("Grid is: {:?}", g);
+    g[0][1] = 9;
+    println!("0,1 is now {}", g[0][1]);
+    println!("Grid is now: {:?}", g);
 }
 
 fn evaluate(exp: &Expr) -> i32 {
