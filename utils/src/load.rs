@@ -2,6 +2,8 @@ use lalrpop_util::*;
 lalrpop_mod!(pub load_parser);
 
 use crate::signals_from_day8::{Puzzle};
+
+#[cfg(test)]
 use crate::coordinates::{Line};
 
 pub fn parse_comma_separated(line: &str) -> Vec<i32> {
@@ -14,6 +16,7 @@ pub fn parse_day8_2021_puzzle(line: &str) -> Puzzle {
   parser.parse(line).unwrap()
 }
 
+#[cfg(test)]
 pub fn parse_line2d(line: &str) -> Line {
   let parser = load_parser::Line2dParser::new();
   parser.parse(line).unwrap()

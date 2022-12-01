@@ -35,6 +35,6 @@ pub Line2d: Line = {
   <s:Coord2d> "->" <e:Coord2d> => Line::new(s, e)
 }
 
-pub Coord2d: Coord = {
+Coord2d: Coord = {
   <x:Int32> "," <y:Int32> => Coord::new(x, y, 0)
 }
