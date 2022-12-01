@@ -13,12 +13,21 @@ fn main() {
                     sum = 0;
                 }
             },
-            Err(_) => ()
+            _ => ()
         }
     }
+    elfSums.push(sum);
 
     // Now we have a list of elves, each of which is the sum of the elf's calories.
-    println!("{:?}", elfSums);
-    println!("{}", elfSums.iter().max().unwrap());
+    println!("The top elf carries: {}", elfSums.iter().max().unwrap());
     // Part 1 complete!
+
+    // Part 2, find the top 3 elves.
+    elfSums.sort();
+
+    let mut topThree = 0;
+    for t in elfSums.iter().rev().take(3) {
+        topThree += t;
+    }
+    println!("The top three elves carry: {topThree}");
 }
