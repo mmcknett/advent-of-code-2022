@@ -22,6 +22,6 @@ I [refactored day 1](./day01/src/main.rs) into a more template-able example that
 1. Read files instead of relying on standard input. That way the program is debuggable!
 
 Todo:
-- [ ] Create a template for days that includes a `launch.json` to provide a test runner and two configs for loading `sample.txt` and `input.txt`.
+- [x] Create a template for days that includes a `launch.json` to provide a test runner and two configs for loading `sample.txt` and `input.txt`.
 - [x] Create a string-to-vector utility to parse things out of strings separated by [whatever].
 - [x] ~~Extract an argument-reading utility~~ I decided I don't want to deal with a utility function taking a mutable iterator *and* returning a string.
