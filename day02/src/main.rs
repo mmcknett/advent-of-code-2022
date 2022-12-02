@@ -16,6 +16,31 @@ fn main() {
     println!("Your score is {score}");
 
     // Part 2
+    let score = lines.iter().fold(0,
+        |acc, s| {
+            let theirs_and_outcome: Vec<&str> = s.split(' ').collect();
+            let their_play = theirs_and_outcome[0];
+            let my_play = play_for_outcome(their_play, theirs_and_outcome[1]);
+            return acc + score_round(their_play, my_play);
+        }
+    );
+
+    println!("Actually, your real score is {score}");
+}
+
+fn play_for_outcome(opp: &str, outcome: &str) -> &'static str {
+    match (opp, outcome) {
+        ("A", "X") => "Z", // Lose
+        ("B", "X") => "X",
+        ("C", "X") => "Y",
+        ("A", "Y") => "X", // Draw
+        ("B", "Y") => "Y",
+        ("C", "Y") => "Z",
+        ("A", "Z") => "Y", // Win
+        ("B", "Z") => "Z",
+        ("C", "Z") => "X",
+        _ => panic!("Invalid combo")
+    }
 }
 
 fn score_round(opp: &str, me: &str) -> i32 {
@@ -48,5 +73,12 @@ mod tests {
         assert_eq!(score_round("A", "Y"), 8);
         assert_eq!(score_round("B", "X"), 1);
         assert_eq!(score_round("C", "Z"), 6)
+    }
+
+    #[test]
+    fn day_2_part_2() {
+        assert_eq!(play_for_outcome("A", "Y"), "X");
+        assert_eq!(play_for_outcome("B", "X"), "X");
+        assert_eq!(play_for_outcome("C", "Z"), "X");
     }
 }
