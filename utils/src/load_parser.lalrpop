@@ -38,3 +38,30 @@ pub Line2d: Line = {
 Coord2d: Coord = {
   <x:Int32> "," <y:Int32> => Coord::new(x, y, 0)
 }
+
+use crate::rps::{Play, Outcome};
+pub RpsHand: (Play, Play) = {
+  Play Play => (<>)
+}
+
+pub RpsHandOutcome: (Play, Outcome) = {
+  Play Outcome => (<>)
+}
+
+// For some reason I can't get regex to work for these at all,
+// so I have extra literals
+Play: Play = {
+  // r"[AX]" => Play::Rock, // This rule can't match the X in "A X"
+  "A" => Play::Rock,
+  "X" => Play::Rock,
+  "B" => Play::Paper,
+  "Y" => Play::Paper,
+  "C" => Play::Scissors,
+  "Z" => Play::Scissors,
+}
+
+Outcome: Outcome = {
+  "X" => Outcome::Lose,
+  "Y" => Outcome::Draw,
+  "Z" => Outcome::Win
+}

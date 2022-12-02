@@ -38,3 +38,23 @@ fn test_day8_2021_lines() {
 fn test_coord2ds() {
   assert_eq!(format!["{:?}", parse_line2d("2,3 -> 6,9")], "Line { s: Coord { x: 2, y: 3, z: 0 }, e: Coord { x: 6, y: 9, z: 0 } }");
 }
+
+#[cfg(test)]
+mod rps_parser_tests {
+  use super::load_parser::{RpsHandParser, RpsHandOutcomeParser};
+  use crate::rps::{Play, Outcome};
+
+  #[test]
+  fn rps_parser() {
+    let parser = RpsHandParser::new();
+    assert_eq!(parser.parse("A X").unwrap(), (Play::Rock, Play::Rock));
+    assert_eq!(parser.parse("B Y").unwrap(), (Play::Paper, Play::Paper));
+    assert_eq!(parser.parse("C Z").unwrap(), (Play::Scissors, Play::Scissors));
+  }
+
+  #[test]
+  fn rps_outcome_parser() {
+    let parser = RpsHandOutcomeParser::new();
+    assert_eq!(parser.parse("A X").unwrap(), (Play::Rock, Outcome::Lose));
+  }
+}

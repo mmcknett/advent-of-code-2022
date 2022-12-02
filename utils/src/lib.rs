@@ -1,6 +1,6 @@
 use std::io::{self, BufRead};
 
-mod load;
+pub mod load;
 use load::*;
 use load::load_parser;
 
@@ -9,6 +9,8 @@ use signals_from_day8::Puzzle;
 
 mod coordinates;
 use coordinates::Line;
+
+pub mod rps;
 
 pub fn load_comma_separated_ints() -> Vec<i32> {
   io::stdin()
