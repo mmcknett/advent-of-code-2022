@@ -4,10 +4,39 @@ fn main() {
     let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
 
     // Parse input
+    let lines: Vec<&str> = input.split("\n").collect();
+    let score = lines.iter().fold(0,
+        |acc, s| {
+            let play: Vec<&str> = s.split(' ').collect();
+            return acc + score_round(play[0], play[1]);
+        }
+    );
 
     // Part 1
+    println!("Your score is {score}");
 
     // Part 2
+}
+
+fn score_round(opp: &str, me: &str) -> i32 {
+    let shape_score = match me {
+        "X" => 1,
+        "Y" => 2,
+        "Z" => 3,
+        _ => panic!("Invalid shape")
+    };
+
+    // Rock     - A X
+    // Paper    - B Y
+    // Scissors - C Z
+    let round_score = match (opp, me) {
+        ("C", "X") | ("A", "Y") | ("B", "Z") => 6, // I win
+        ("A", "X") | ("B", "Y") | ("C", "Z") => 3, // Draw
+        ("B", "X") | ("C", "Y") | ("A", "Z") => 0, // I lose
+        _ => panic!("Invalid round!")
+    };
+
+    return shape_score + round_score;
 }
 
 #[cfg(test)]
@@ -16,6 +45,8 @@ mod tests {
 
     #[test]
     fn day_2_test() {
-        assert_eq![1, 1]
+        assert_eq!(score_round("A", "Y"), 8);
+        assert_eq!(score_round("B", "X"), 1);
+        assert_eq!(score_round("C", "Z"), 6)
     }
 }
