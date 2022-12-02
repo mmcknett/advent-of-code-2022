@@ -1,5 +1,10 @@
 # Steps for setup
 ## Parsing
+### Simple
+* If you can solve it with splitting strings, do that!
+* If you just need to turn strings into enums, [use 2021 day 02](https://github.com/mmcknett/advent-of-code-2021/blob/master/02/rust/src/main.rs#L64-L75) as an example
+
+### Complex
 If you need to parse input, you can get a parser generator with LALRPOP.
 
 Add these lines to your `Cargo.toml`. The lexer line is [explained in this GitHub issue](https://github.com/lalrpop/lalrpop/issues/650#issuecomment-1032308454).
@@ -71,7 +76,9 @@ Make sure to open the folder for the project as the root of VS Code (e.g. `code 
 ## 2D Grid
 Try using the [grid crate](https://docs.rs/grid/latest/grid/index.html)!
 
-From the examples:
+Tried it out in testbed: [main.rs](../testbed/src/main.rs).
+
+From the docs examples:
 
 ```rust
 use grid::*;
@@ -89,3 +96,6 @@ assert_eq!(grid, grid![[1,2,3][4,5,6][7,8,9]])
 Consider reading a file directly so that the program can be debugged with VS Code, rather than piping the file to the program to be read by stdin.
 
 See the `read_lines` [example](https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html).
+
+## Timing
+Need to know how fast it went? Use [Instant](https://doc.rust-lang.org/std/time/struct.Instant.html)
