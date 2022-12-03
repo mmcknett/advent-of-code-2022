@@ -15,7 +15,10 @@ fn main() {
     // For this one, read a string of lower and upper-case chars.
     // Convert these into 1-26 (a-z) and 27-52 (A-Z)
     // Then split the list into two
-    let common_pris: Vec<Pri> = input.split("\n").map(|s: &str| find_common_item(load_string_to_two_vecs(s))).collect();
+    let common_pris: Vec<Pri> = input
+        .split("\n")
+        .map(|s: &str| intersect(load_string_to_two_sets(s)))
+        .collect();
 
     // Part 1
     let sum_of_commons: u32 = common_pris.iter().sum();
@@ -23,13 +26,15 @@ fn main() {
 
     // Part 2
     // Re-parse the input to get groups of three lines. Find the common number among the three lines.
-    let badge_sum: u32 = input.split("\n").chunks(3).into_iter().map(
-        |group| {
-            let elves: Vec<HashSet<Pri>> = group.map(|s: &str| s.chars().map(char_to_pri).collect()).into_iter().collect();
-            let badge: Pri = intersect(elves);
-            return badge;
-        }
-    ).sum();
+    let badge_sum: u32 = input
+        .split("\n").chunks(3).into_iter()
+        .map(
+            |group| {
+                let elves: Vec<HashSet<Pri>> = group.map(|s: &str| s.chars().map(char_to_pri).collect()).into_iter().collect();
+                let badge: Pri = intersect(elves);
+                badge
+            })
+        .sum();
     println!("The sum of badge priorities for each group of three is {badge_sum}");
 }
 
@@ -47,21 +52,11 @@ fn intersect(pri_sets: Vec<HashSet<Pri>>) -> Pri {
     return intersection.iter().next().copied().expect("The intersection was empty!");
 }
 
-fn load_string_to_two_vecs(input: &str) -> (Vec<Pri>, Vec<Pri>) {
-    let iter = input.chars();
-    let first: Vec<Pri> = iter.clone().take(input.len() / 2).map(char_to_pri).collect();
-    let second: Vec<Pri> = iter.skip(input.len() / 2).map(char_to_pri).collect();
-    return (first, second)
-}
-
-fn find_common_item((first, second): (Vec<Pri>, Vec<Pri>)) -> Pri {
-    for f in first {
-        match second.iter().copied().find(|s| f == *s) {
-            Some(s) => return s,
-            None => continue
-        }
-    }
-    panic!("Didn't find a common item!");
+fn load_string_to_two_sets(input: &str) -> Vec<HashSet<Pri>> {
+    // Split into two chunks of chars, then turn those into sets of priorities.
+    input.chars().chunks(input.len() / 2).into_iter().map(
+        |chunk| chunk.map(char_to_pri).collect()
+    ).collect()
 }
 
 fn char_to_pri(c: char) -> Pri {
@@ -96,12 +91,7 @@ mod tests {
 
     #[test]
     fn split_test() {
-        assert_eq!(load_string_to_two_vecs("AZaz"), (vec![27, 52], vec![1, 26]));
-    }
-
-    #[test]
-    fn find_common() {
-        assert_eq!(find_common_item((vec![1,3,5], vec![6,9,3])), 3);
+        assert_eq!(load_string_to_two_sets("AZaz"), vec![HashSet::from([27, 52]), HashSet::from([1, 26])]);
     }
 
     #[test]
