@@ -12,13 +12,13 @@ fn main() {
 
     // Part 1
     let fully_contained_sum: u32 = assign_pairs.iter().map(
-        |range_pair| if range_pair.0.fully_contains(&range_pair.1) || range_pair.1.fully_contains(&range_pair.0) { 1 } else { 0 }
+        |range_pair| (range_pair.0.fully_contains(&range_pair.1) || range_pair.1.fully_contains(&range_pair.0)) as u32
     ).sum();
     println!("{fully_contained_sum} pairs have one range fully containing the other.");
 
     // Part 2
     let overlaps_sum: u32 = assign_pairs.iter().map(
-        |range_pair| if range_pair.0.overlaps(&range_pair.1) { 1 } else { 0 }
+        |range_pair| range_pair.0.overlaps(&range_pair.1) as u32
     ).sum();
     println!("{overlaps_sum} pairs overlap.");
 }
