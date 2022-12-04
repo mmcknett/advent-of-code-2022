@@ -5,6 +5,11 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 4
+[Day 4 prompt](https://adventofcode.com/2022/day/4)
+
+LALRPOP paid off for this one! It was really simple to write a parser that extracted text into a pair of ranges. I created a `Range` struct with `start` & `end`, and then implemented `fully_contains` and `overlaps` for inclusive-end ranges. Instead of thinking too hard about the overlaps logic, I just gave it my best shot on the boolean operations and refined by adding a bunch of test cases. With those things in place, it was fairly straightforward to turn the text of the prompt into code that said what it was supposed to do ("sum the assignment pairs that overlap each other", basically, for part 2).
+
 ## Day 3
 [Day 3 prompt](https://adventofcode.com/2022/day/3)
 
