@@ -17,6 +17,10 @@ fn main() {
     println!("{fully_contained_sum} pairs have one range fully containing the other.");
 
     // Part 2
+    let overlaps_sum: u32 = assign_pairs.iter().map(
+        |range_pair| if range_pair.0.overlaps(&range_pair.1) { 1 } else { 0 }
+    ).sum();
+    println!("{overlaps_sum} pairs overlap.");
 }
 
 #[cfg(test)]
