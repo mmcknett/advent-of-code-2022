@@ -58,3 +58,17 @@ mod rps_parser_tests {
     assert_eq!(parser.parse("A X").unwrap(), (Play::Rock, Outcome::Lose));
   }
 }
+
+
+#[cfg(test)]
+pub mod range_load {
+  use crate::ranges::Range;
+
+  use super::*;
+
+  #[test]
+  pub fn load_ranges() {
+    let parser = load_parser::RangePairParser::new();
+    assert_eq!(parser.parse("2-4,6-8").unwrap(), (Range::new(2,4), Range::new(6,8)));
+  }
+}

@@ -12,6 +12,8 @@ use coordinates::Line;
 
 pub mod rps;
 
+pub mod ranges;
+
 pub fn load_comma_separated_ints() -> Vec<i32> {
   io::stdin()
     .lock()

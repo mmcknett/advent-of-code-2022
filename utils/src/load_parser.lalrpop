@@ -17,6 +17,13 @@ Int32: i32 = {
     })
 };
 
+U32: u32 = {
+  r"[0-9]+" =>? u32::from_str(<>)
+    .map_err(|_| ParseError::User {
+      error: "Number can't be parsed"
+    })
+};
+
 // 2021 Day 8 puzzle input
 use crate::signals_from_day8::{Signal, Puzzle};
 
@@ -64,4 +71,13 @@ Outcome: Outcome = {
   "X" => Outcome::Lose,
   "Y" => Outcome::Draw,
   "Z" => Outcome::Win
+}
+
+use crate::ranges::Range;
+pub RangePair: (Range, Range) = {
+  <Range> "," <Range> => (<>)
+}
+
+Range: Range = {
+  <U32> "-" <U32> => Range::new(<>)
 }
