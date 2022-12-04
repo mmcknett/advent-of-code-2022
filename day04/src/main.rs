@@ -22,13 +22,3 @@ fn main() {
     ).sum();
     println!("{overlaps_sum} pairs overlap.");
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day_2_test() {
-        assert_eq![1, 1]
-    }
-}
