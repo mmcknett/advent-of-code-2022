@@ -7,15 +7,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Sample input dayXX",
+      "name": "Sample input day04",
       "cargo": {
         "args": [
           "build",
-          "--bin=dayXX",
-          "--package=dayXX"
+          "--bin=day04",
+          "--package=day04"
         ],
         "filter": {
-          "name": "dayXX",
+          "name": "day04",
           "kind": "bin"
         }
       },
@@ -25,15 +25,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Puzzle input dayXX",
+      "name": "Puzzle input day04",
       "cargo": {
         "args": [
           "build",
-          "--bin=dayXX",
-          "--package=dayXX"
+          "--bin=day04",
+          "--package=day04"
         ],
         "filter": {
-          "name": "dayXX",
+          "name": "day04",
           "kind": "bin"
         }
       },
@@ -43,16 +43,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'dayXX'",
+      "name": "Debug unit tests in executable 'day04'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=dayXX",
-          "--package=dayXX"
+          "--bin=day04",
+          "--package=day04"
         ],
         "filter": {
-          "name": "dayXX",
+          "name": "day04",
           "kind": "bin"
         }
       },

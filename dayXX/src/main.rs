@@ -15,7 +15,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day_2_test() {
+    fn day_XX_test() {
         assert_eq![1, 1]
     }
 }
