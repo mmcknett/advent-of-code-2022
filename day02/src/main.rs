@@ -1,4 +1,4 @@
-use utils::load::load_parser::{RpsHandParser, RpsHandOutcomeParser};
+use utils::load::rps_parser::{RpsHandParser, RpsHandOutcomeParser};
 use utils::rps::*;
 
 fn main() {

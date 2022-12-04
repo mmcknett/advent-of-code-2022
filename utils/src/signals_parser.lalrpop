@@ -1,0 +1,12 @@
+grammar;
+
+// 2021 Day 8 puzzle input
+use crate::signals_from_day8::{Signal, Puzzle};
+
+pub Puzzle: Puzzle = {
+  <transients:(Signal)+> "|" <readout:(Signal)+> => (transients, readout)
+}
+
+Signal: Signal = {
+  r"[a-g]+" => <>.chars().collect()
+}

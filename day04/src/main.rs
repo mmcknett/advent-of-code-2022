@@ -1,5 +1,5 @@
 use utils::ranges::Range;
-use utils::load::load_parser::RangePairParser;
+use utils::load::range_parser::RangePairParser;
 
 fn main() {
     // Read in the file provided as the first argument.

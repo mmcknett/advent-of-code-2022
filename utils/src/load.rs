@@ -1,5 +1,9 @@
 use lalrpop_util::*;
 lalrpop_mod!(pub load_parser);
+lalrpop_mod!(pub range_parser);
+lalrpop_mod!(pub rps_parser);
+lalrpop_mod!(pub coord_2d_parser);
+lalrpop_mod!(pub signals_parser);
 
 use crate::signals_from_day8::{Puzzle};
 
@@ -12,13 +16,13 @@ pub fn parse_comma_separated(line: &str) -> Vec<i32> {
 }
 
 pub fn parse_day8_2021_puzzle(line: &str) -> Puzzle {
-  let parser = load_parser::PuzzleParser::new();
+  let parser = signals_parser::PuzzleParser::new();
   parser.parse(line).unwrap()
 }
 
 #[cfg(test)]
 pub fn parse_line2d(line: &str) -> Line {
-  let parser = load_parser::Line2dParser::new();
+  let parser = coord_2d_parser::Line2dParser::new();
   parser.parse(line).unwrap()
 }
 
@@ -37,11 +41,12 @@ fn test_day8_2021_lines() {
 #[test]
 fn test_coord2ds() {
   assert_eq!(format!["{:?}", parse_line2d("2,3 -> 6,9")], "Line { s: Coord { x: 2, y: 3, z: 0 }, e: Coord { x: 6, y: 9, z: 0 } }");
+  assert_eq!(format!["{:?}", parse_line2d("-2,-3 -> -6,-9")], "Line { s: Coord { x: -2, y: -3, z: 0 }, e: Coord { x: -6, y: -9, z: 0 } }");
 }
 
 #[cfg(test)]
 mod rps_parser_tests {
-  use super::load_parser::{RpsHandParser, RpsHandOutcomeParser};
+  use super::rps_parser::{RpsHandParser, RpsHandOutcomeParser};
   use crate::rps::{Play, Outcome};
 
   #[test]
@@ -68,7 +73,7 @@ pub mod range_load {
 
   #[test]
   pub fn load_ranges() {
-    let parser = load_parser::RangePairParser::new();
+    let parser = range_parser::RangePairParser::new();
     assert_eq!(parser.parse("2-4,6-8").unwrap(), (Range::new(2,4), Range::new(6,8)));
   }
 }

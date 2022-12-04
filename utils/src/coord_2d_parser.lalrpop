@@ -1,0 +1,22 @@
+use std::str::FromStr;
+use lalrpop_util::ParseError;
+
+grammar;
+
+// 2021 Day 5: `x,y -> x2,y2`
+use crate::coordinates::{Coord, Line};
+
+pub Line2d: Line = {
+  <s:Coord2d> "->" <e:Coord2d> => Line::new(s, e)
+}
+
+Coord2d: Coord = {
+  <x:Int32> "," <y:Int32> => Coord::new(x, y, 0)
+}
+
+Int32: i32 = {
+  r"-?[0-9]+" =>? i32::from_str(<>)
+    .map_err(|_| ParseError::User {
+      error: "Number can't be parsed"
+    })
+};
