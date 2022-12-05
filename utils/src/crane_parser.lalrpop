@@ -1,0 +1,15 @@
+use std::str::FromStr;
+use lalrpop_util::ParseError;
+
+grammar;
+
+pub Move: (u32, u32, u32) = {
+  "move" <U32> "from" <U32> "to" <U32> => (<>)
+}
+
+U32: u32 = {
+  r"[0-9]+" =>? u32::from_str(<>)
+    .map_err(|_| ParseError::User {
+      error: "Number can't be parsed"
+    })
+};

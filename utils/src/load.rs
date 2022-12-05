@@ -4,6 +4,7 @@ lalrpop_mod!(pub range_parser);
 lalrpop_mod!(pub rps_parser);
 lalrpop_mod!(pub coord_2d_parser);
 lalrpop_mod!(pub signals_parser);
+lalrpop_mod!(pub crane_parser);
 
 use crate::signals_from_day8::{Puzzle};
 
@@ -75,5 +76,17 @@ pub mod range_load {
   pub fn load_ranges() {
     let parser = range_parser::RangePairParser::new();
     assert_eq!(parser.parse("2-4,6-8").unwrap(), (Range::new(2,4), Range::new(6,8)));
+  }
+}
+
+#[cfg(test)]
+pub mod crane_load {
+  use super::*;
+
+  #[test]
+  pub fn load_crane() {
+    let parser = crane_parser::MoveParser::new();
+    assert_eq!(parser.parse("move 1 from 2 to 1").unwrap(), (1, 2, 1));
+    assert_eq!(parser.parse("move 28 from 3 to 6").unwrap(), (28, 3, 6));
   }
 }
