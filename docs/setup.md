@@ -3,6 +3,7 @@
 ### Simple
 * If you can solve it with splitting strings, do that!
 * If you just need to turn strings into enums, [use 2021 day 02](https://github.com/mmcknett/advent-of-code-2021/blob/master/02/rust/src/main.rs#L64-L75) as an example
+* Relatively straightforward lines like Day 5's "move N from X to Y" can be easily parsed with [scan_fmt](https://docs.rs/crate/scan_fmt/latest).
 
 ### Complex
 If you need to parse input, you can get a parser generator with LALRPOP.
