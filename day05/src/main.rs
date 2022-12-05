@@ -76,7 +76,7 @@ fn apply_move(mut stack: Vec<VecDeque<char>>, next_move: (u32, u32, u32)) -> Vec
 }
 
 fn apply_move_part2(mut stack: Vec<VecDeque<char>>, next_move: (u32, u32, u32)) -> Vec<VecDeque<char>> {
-    let (mut count, from, to) = next_move;
+    let (count, from, to) = next_move;
     let from = (from - 1) as usize; // Adjust for 1-based indices.
     let to = (to - 1) as usize;
 

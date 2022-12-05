@@ -5,6 +5,18 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 5
+[Day 5 prompt](https://adventofcode.com/2022/day/5)
+
+I got myself really wound up around parsing on this one. I went down a rabbit hold trying to use LALRPOP to parse the representation of the stacks, but hit a snag because I needed a lexer that *doesn't* ignore whitespace. Then it took me time to decide how I wanted to handle the custom parsing.
+
+### Lessons learned
+* Don't even bother with LALRPOP's default lexer if whitespace matters in the parsing.
+
+To do:
+- [ ] See if it's possible to write a LALRPOP lexer that can consider whitespace. This could even be useful for when newline-separated input needs to get parsed as a vector.
+- [ ] Look for the faster way of initializing a vector of objects. I got hung up trying to figure out how to `repeat` a `VecDeque::new`.
+
 ## Day 4
 [Day 4 prompt](https://adventofcode.com/2022/day/4)
 
@@ -18,10 +30,13 @@ Parsing was again the big challenge. I had to sort out the mechanics of splittin
 This `intersect_all` might come in handy later! It would have been handy for Part 1, too, if I'd thought to put the two halves of each input into sets instead of vectors. When I refactor, I'll probably use it.
 
 ### Lessons learned
-* Get comfortable with `HashSet`, because sets are probably going to come in handy and accumulating them was a little strange. E.g. `copied()` to turn `&u32` into `u32`.
-* Study up on `group_by`, because it would have been helpful for Day 1 *and* today.
-* The equivalent to Python's `ord()` is `char as u32`.
-* Using `#[test]`s to try things out was handy.
+1. Get comfortable with `HashSet`, because sets are probably going to come in handy and accumulating them was a little strange. E.g. `copied()` to turn `&u32` into `u32`.
+1. Study up on `group_by`, because it would have been helpful for Day 1 *and* today.
+1. The equivalent to Python's `ord()` is `char as u32`.
+1. Using `#[test]`s to try things out was handy.
+
+To do:
+- [ ] Get comfortable with `group_by`
 
 ## Day 2
 [Day 2 prompt](https://adventofcode.com/2022/day/2)
@@ -31,8 +46,8 @@ Keeping the various cases straight was the hardest part. For simplicity I didn't
 Refactoring this one exposed something weird in LALRPOP, where I can't seem to use regex rules on my [Play terminal](https://github.com/mmcknett/advent-of-code-2022/blob/7cd1bd21d0b19de5a07c28031a6112e6662b25bd/utils/src/load_parser.lalrpop#L53-L61). That is, I really wanted to write `r"[AX]" => ...`, but had to resort to `"A" => ...` and `"X" => ...`.
 
 ### Lessons learned
-* It's more readable to use `sum()` instead of `fold()` with an implicit sum.
-* LALRPOP has some rough edges; if you're time-pressured, work around them and move on.
+1. It's more readable to use `sum()` instead of `fold()` with an implicit sum.
+1. LALRPOP has some rough edges; if you're time-pressured, work around them and move on.
 
 ## Day 1
 First see: [Day 1 prompt](https://adventofcode.com/2022/day/1)
@@ -47,7 +62,7 @@ I [refactored day 1](./day01/src/main.rs) into a more template-able example that
 1. Just solve the part 1 problem without trying to anticipate the part 2 problem. I preserved lists of ints instead of summing as I went.
 1. Read files instead of relying on standard input. That way the program is debuggable!
 
-Todo:
+To do:
 - [x] Create a template for days that includes a `launch.json` to provide a test runner and two configs for loading `sample.txt` and `input.txt`.
 - [x] Create a string-to-vector utility to parse things out of strings separated by [whatever].
 - [x] ~~Extract an argument-reading utility~~ I decided I don't want to deal with a utility function taking a mutable iterator *and* returning a string.
