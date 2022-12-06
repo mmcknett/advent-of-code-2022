@@ -133,5 +133,16 @@ mod test{
         assert!(expr.is_err());
         assert_eq!(expr.unwrap_err(), ParseError::User { error: "number is too big" });
     }
+
+    #[test]
+    fn chat_gpt() {
+        // Chat GPT suggested a chunking method:
+        // let s = "abc def ghi";
+        // let chunks = s.chunks(3).map(|chunk| chunk.join(" "));
+        // It doesn't actually work, but this does.
+        let s = "abc def ghi";
+        let chunks: Vec<String> = s.chars().collect::<Vec<char>>().chunks(4).map(|cs| cs.iter().take(3).collect::<String>()).collect();
+        assert_eq!(chunks, ["abc", "def", "ghi"]);
+    }
 }
 

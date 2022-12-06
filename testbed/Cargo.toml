@@ -13,6 +13,7 @@ lalrpop = "0.19.7"
 lalrpop-util = { version = "^0.19", features = ["lexer"] }
 regex = "1"
 grid = "0.9.0"
+itertools = "*"
 
 [dependencies.utils]
 path = "../utils"
