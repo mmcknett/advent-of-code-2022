@@ -36,10 +36,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day_06_test() {
+    fn day_06_part1_test() {
         assert_eq!(find_first_unique_4("bvwbjplbgvbhsrlpgdmjqwftvncz"), 5);
         assert_eq!(find_first_unique_4("nppdvjthqldpwncqszvftbrmjlhg"), 6);
         assert_eq!(find_first_unique_4("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), 10);
         assert_eq!(find_first_unique_4("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), 11);
+    }
+
+    #[test]
+    fn day_06_part2_test() {
+        assert_eq!(find_first_unique_N("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 14), 19);
+        assert_eq!(find_first_unique_N("bvwbjplbgvbhsrlpgdmjqwftvncz", 14), 23);
+        assert_eq!(find_first_unique_N("nppdvjthqldpwncqszvftbrmjlhg", 14), 23);
+        assert_eq!(find_first_unique_N("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 14), 29);
+        assert_eq!(find_first_unique_N("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 14), 26);
     }
 }
