@@ -9,3 +9,4 @@ edition = "2021"
 path = "../utils"
 
 [dependencies]
+itertools = "*"
