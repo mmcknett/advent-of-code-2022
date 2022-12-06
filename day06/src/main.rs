@@ -10,19 +10,25 @@ fn main() {
 
     // Part 1
     let result = find_first_unique_4(&input);
-    println!("Part 1 answer: {result}");
+    println!("Part 1 -- first start-of-packet: {result}");
 
     // Part 2
+    let result = find_first_unique_N(&input, 14);
+    println!("Part 2 -- first start-of-message marker: {result}");
 }
 
 fn find_first_unique_4(s: &str) -> usize {
+    find_first_unique_N(&s, 4)
+}
+
+fn find_first_unique_N(s: &str, n: usize) -> usize {
     let cvec = s.chars().collect::<Vec<char>>();
-    let mut window_sets = cvec.windows(4).map(
+    let mut window_sets = cvec.windows(n).map(
         |w| w.iter().copied().collect::<HashSet<char>>()
     );
     window_sets.find_position(
-        |set| set.len() == 4
-    ).unwrap().0 + 4 // add 4 to the position since it's the position of the last character.
+        |set| set.len() == n
+    ).unwrap().0 + n // add N to the position since it's the position of the last character.
 }
 
 #[cfg(test)]
