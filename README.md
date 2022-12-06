@@ -5,6 +5,11 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 6
+[Day 6 prompt](https://adventofcode.com/2022/day/6)
+
+I was just waiting for Rust's `windows` method to come in handy! It was a little cumbersome to figure out how to turn a `&str` into the kind of slice that has `windows` on it, but once I did that it was just a matter of using sets to find the first run of characters that were all unique. And since the second part was the same algorithm with a different window size, it was just a matter of generalizing the function to take `n` instead of using `4` everywhere.
+
 ## Day 5
 [Day 5 prompt](https://adventofcode.com/2022/day/5)
 
