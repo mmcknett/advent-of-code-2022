@@ -16,6 +16,19 @@ fn main() {
     println!("/ sum of smallest dirs: {sum_smallest}");
 
     // Part 2
+    const SPACE_AVAIL: u64 = 70_000_000;
+    const SPACE_NEEDED: u64 = 30_000_000;
+    let unused_space: u64 = SPACE_AVAIL - root.size();
+    println!("Space unused before delete: {unused_space}");
+
+    // Try deleting every directory and see how much space it would free up?
+    // That would be the size of the directory. So look at every directory's size, and
+    // ignore any that won't free up enough space. Then find the smallest.
+    let smallest_that_frees_enough: u64 = *all_directory_sizes(&root)
+        .iter()
+        .filter(|size| unused_space + *size > SPACE_NEEDED)
+        .min().unwrap();
+    println!("The directory that frees up enough space has size {smallest_that_frees_enough}");
 }
 
 fn make_fs(cmds: Vec<Command>) -> Directory {
@@ -42,6 +55,18 @@ fn make_dir(next_cmds: &mut impl Iterator<Item = Command>) -> Directory {
     return current;
 }
 
+fn all_directory_sizes(dir: &Directory) -> Vec<u64> {
+    let mut sizes = vec![dir.size()];
+    sizes.append(
+        &mut dir.subdirs
+            .iter()
+            .map(all_directory_sizes)
+            .flatten()
+            .collect::<Vec<u64>>()
+        );
+    return sizes;
+}
+
 struct Directory {
     subdirs: Vec<Directory>,
     file_sizes: Vec<u64>
@@ -49,6 +74,7 @@ struct Directory {
 
 impl Directory {
     fn new() -> Directory {
+        // If we need to cache the size of a dir, add a field here and invalidate it if we add a file size or subdir.
         Directory { subdirs: vec![], file_sizes: vec![] }
     }
 
