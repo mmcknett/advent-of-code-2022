@@ -5,6 +5,17 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 7
+[Day 7 prompt](https://adventofcode.com/2022/day/7)
+
+The parser was probably overkill for this one, but because I've been leaning on it so much, it was easier to reach for it than to try to relearn `Regex` and build a match statement on regexes.
+
+The hardest part of Day 7 was keeping track of things.
+* Keeping track of what terminal commands could just be ignored
+* Keeping track of duplicated values for summing the smallest directories (for part 1).
+
+I didn't bother to benchmark part 2, but it's obviously exponential runtime (the size is calculated recursively every time). I could cache the calculated size of the directories, but since it gave me the right answer instantaneously without caching, it wasn't necessary.
+
 ## Day 6
 [Day 6 prompt](https://adventofcode.com/2022/day/6)
 
