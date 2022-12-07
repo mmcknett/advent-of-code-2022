@@ -5,6 +5,7 @@ lalrpop_mod!(pub rps_parser);
 lalrpop_mod!(pub coord_2d_parser);
 lalrpop_mod!(pub signals_parser);
 lalrpop_mod!(pub crane_parser);
+lalrpop_mod!(pub terminal_parser);
 
 use crate::signals_from_day8::{Puzzle};
 
@@ -88,5 +89,24 @@ pub mod crane_load {
     let parser = crane_parser::MoveParser::new();
     assert_eq!(parser.parse("move 1 from 2 to 1").unwrap(), (1, 2, 1));
     assert_eq!(parser.parse("move 28 from 3 to 6").unwrap(), (28, 3, 6));
+  }
+}
+
+#[cfg(test)]
+pub mod term_load {
+  use super::*;
+  use crate::terminal_cmds::Command;
+
+  #[test]
+  pub fn terminal_cmd_load() {
+    let parser = terminal_parser::CommandParser::new();
+    assert_eq!(parser.parse("$ cd /").unwrap(), Command::MakeDir);
+    assert_eq!(parser.parse("$ ls").unwrap(), Command::Ignore);
+    assert_eq!(parser.parse("150555 bch.lht").unwrap(), Command::FileSize(150555));
+    assert_eq!(parser.parse("276291 ccqfdznj.sqg").unwrap(), Command::FileSize(276291));
+    assert_eq!(parser.parse("dir csmqbhjv").unwrap(), Command::Ignore);
+    assert_eq!(parser.parse("192660 qnbzgp").unwrap(), Command::FileSize(192660));
+    assert_eq!(parser.parse("dir sqphfslv").unwrap(), Command::Ignore);
+    assert_eq!(parser.parse("$ cd csmqbhjv").unwrap(), Command::MakeDir);
   }
 }

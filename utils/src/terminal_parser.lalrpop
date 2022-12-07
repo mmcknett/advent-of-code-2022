@@ -1,0 +1,20 @@
+use std::str::FromStr;
+use lalrpop_util::ParseError;
+
+grammar;
+
+use crate::terminal_cmds::Command::{self, *};
+pub Command: Command = {
+  r"\$ cd (/|\w+)" => MakeDir,
+  "$ ls" => Ignore,
+  r"dir \w+" => Ignore,
+  "$ cd .." => FinishDir,
+  <U64> r"[[[:alpha:]]\.]+" => FileSize(<>)
+}
+
+U64: u64 = {
+  r"[0-9]+" =>? u64::from_str(<>)
+    .map_err(|_| ParseError::User {
+      error: "Number can't be parsed"
+    })
+};
