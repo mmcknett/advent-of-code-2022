@@ -24,6 +24,14 @@ fn main() {
     println!("The number of visible trees is: {visible_trees}");
 
     // Part 2
+    let mut viewing_distances: Grid<u32> = Grid::new(field.size().0, field.size().1);
+    for r in 0..field.size().0 {
+        for c in 0..field.size().1 {
+            viewing_distances[r][c] = viewing_distance(&field, r, c);
+        }
+    }
+    let max_view_distance = viewing_distances.iter().max().unwrap();
+    println!("The max viewing distance is {max_view_distance}");
 }
 
 fn visible(field: &Grid<u8>, row: usize, col: usize) -> bool {
@@ -35,11 +43,7 @@ fn visible(field: &Grid<u8>, row: usize, col: usize) -> bool {
     let height = field[row][col];
 
     // If everything is less than this coord in any of the directions, it's visible.
-    let vis_left = field.iter_row(row).take(col).all(
-        |&h| {
-            return h < height;
-        }
-    );
+    let vis_left = field.iter_row(row).take(col).all(|&h| h < height);
     let vis_right = field.iter_row(row).skip(col + 1).all(|&h| h < height);
     let vis_top = field.iter_col(col).take(row).all(|&h| h < height);
     let vis_bot = field.iter_col(col).skip(row + 1).all(|&h| h < height);
@@ -47,33 +51,51 @@ fn visible(field: &Grid<u8>, row: usize, col: usize) -> bool {
     return vis_left || vis_right || vis_top || vis_bot;
 }
 
-// This isn't good enough; we'll end up double-counting trees visible in a row *and* a column.
-fn count_visible_in_row(field: &Grid<i8>, row: usize) -> u32 {
-    let mut count = 2; // The outer two trees are visible.
-    let mut l = 0;
-    let mut r = field.size().1 - 1;
-    let mut max_l = field[row][l];
-    let mut max_r = field[row][r];
-
-    while l < r {
-        let curr_l = field[row][l];
-        let curr_r = field[row][r];
-
-        if curr_l > max_l {
-            count += 1;
-            max_l = curr_l;
-            l += 1;
-        } else if curr_r > max_r {
-            count += 1;
-            max_r = curr_r;
-            r -= 1;
-        } else {
-            l += 1;
-            r -= 1;
-        }
+fn viewing_distance(field: &Grid<u8>, row: usize, col: usize) -> u32 {
+    // If on the edge, 0.
+    if row == 0 || col == 0 || row == field.size().0 - 1 || col == field.size().1 - 1 {
+        return 0;
     }
 
-    return count;
+    let height = field[row][col];
+
+    // Look up
+    let mut r = row - 1;
+    let mut view_t = 0;
+    loop {
+        view_t += 1;
+        if r == 0 || field[r][col] >= height { break; }
+        r -= 1;
+    }
+    
+    // Look down
+    let mut r = row + 1;
+    let mut view_b = 0;
+    loop {
+        view_b += 1;
+        if r == field.size().0 - 1 || field[r][col] >= height { break; }
+        r += 1;
+    }
+
+    // Look left
+    let mut c = col - 1;
+    let mut view_l = 0;
+    loop {
+        view_l += 1;
+        if c == 0 || field[row][c] >= height { break; }
+        c -= 1;
+    }
+
+    // Look right
+    let mut c = col + 1;
+    let mut view_r = 0;
+    loop {
+        view_r += 1;
+        if c == field.size().1 - 1 || field[row][c] >= height { break; }
+        c += 1;
+    }
+
+    return view_l * view_r * view_t * view_b;
 }
 
 #[cfg(test)]
