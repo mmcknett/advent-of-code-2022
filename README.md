@@ -5,6 +5,18 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 8
+[Day 8 prompt](https://adventofcode.com/2022/day/8)
+
+I felt like I should've been able to use iterators for the `viewing_distance` code for part 2, but couldn't think of how. I ended up with the usual "look up/left/down/right" kind of code you get when searching a grid is involved. The `grid` crate did come in handy, though, especially given the input format was rows of numbers separated by newlines. If we get another one of these, I'll copy-pasta:
+
+```rust
+    let field: Grid<u8> = Grid::from_vec(
+        input.chars().filter(|c| *c != '\n').map(|c| c.to_digit(10).unwrap() as u8).collect(),
+        input.chars().find_position(|c| *c == '\n').unwrap().0
+    );
+```
+
 ## Day 7
 [Day 7 prompt](https://adventofcode.com/2022/day/7)
 
