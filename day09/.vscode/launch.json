@@ -25,6 +25,24 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Part 2 sample input day09",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=day09",
+          "--package=day09"
+        ],
+        "filter": {
+          "name": "day09",
+          "kind": "bin"
+        }
+      },
+      "args": ["./sample_larger.txt"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Puzzle input day09",
       "cargo": {
         "args": [

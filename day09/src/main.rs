@@ -69,11 +69,11 @@ impl Rope {
 }
 
 struct Knots {
-    knots: [Rope; 10]
+    knots: [Rope; Self::COUNT]
 }
 
 impl Knots {
-    const COUNT: usize = 10;
+    const COUNT: usize = 9;
 
     fn new(x: i32, y: i32) -> Self {
         Knots {
@@ -132,6 +132,7 @@ fn main() {
 
     println!("The tail of 10 knots visits {} unique coordinates", visits.len())
     // First attempt: 2446, too low.
+    // Second attempt correct (there should only be 9 ropes for 10 knots, because 1 is the head)
 }
 
 #[cfg(test)]
