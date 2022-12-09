@@ -6,7 +6,7 @@ use load::*;
 mod signals_from_day8;
 use signals_from_day8::Puzzle;
 
-mod coordinates;
+pub mod coordinates;
 use coordinates::Line;
 
 pub mod rps;

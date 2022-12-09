@@ -1,4 +1,4 @@
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub struct Coord {
     pub x: i32,
     pub y: i32,
@@ -10,9 +10,18 @@ impl Coord {
         Coord { x, y, z }
     }
 
+    pub fn new2(x: i32, y: i32) -> Coord {
+      Coord { x, y, z: 0 }
+    }
+
     pub fn from(coord: (i32, i32, i32)) -> Coord {
         let (x, y, z) = coord;
         Coord::new(x, y, z)
+    }
+
+    pub fn from2(coord: (i32, i32)) -> Coord {
+      let (x, y) = coord;
+      Coord::new2(x, y)
     }
 }
 
