@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use utils::coordinates::Coord;
 
+#[derive(Clone, Copy)]
 struct Rope {
     head: Coord,
     tail: Coord
@@ -36,8 +37,12 @@ impl Rope {
             'R' => (1, 0),
             _ => panic!("Invalid direction")
         };
-        self.head.x += dx;
-        self.head.y += dy;
+        self.position_head(Coord::new2(self.head.x + dx, self.head.y + dy));
+    }
+
+    fn position_head(&mut self, pos: Coord) {
+        self.head.x = pos.x;
+        self.head.y = pos.y;
 
         // Update tail
         let diff_x = self.head.x - self.tail.x;
@@ -49,17 +54,42 @@ impl Rope {
 
         if diff_y.abs() > diff_x.abs()  {
             // More to the y direction, tail follows y.
-            let sign = if diff_y >= 0 { 1 } else { -1 };
             self.tail.x = self.head.x;
-            self.tail.y = self.head.y - sign;
+            self.tail.y = self.head.y - diff_y.signum();
         } else if diff_x.abs() > diff_y.abs() {
             // More to the x direction, tail follows x.
-            let sign = if diff_x >= 0 { 1 } else { -1 };
-            self.tail.x = self.head.x - sign;
+            self.tail.x = self.head.x - diff_x.signum();
             self.tail.y = self.head.y;
-        } else if diff_x.abs() + diff_y.abs() > 2 {
-            panic!("Shouldn't ever have gotten this far away!");
+        } else if diff_x.abs() == diff_y.abs() {
+            // Pure diagonal: tail follows diagonally.
+            self.tail.x = self.head.x - diff_x.signum();
+            self.tail.y = self.head.y - diff_y.signum();
         }
+    }
+}
+
+struct Knots {
+    knots: [Rope; 10]
+}
+
+impl Knots {
+    const COUNT: usize = 10;
+
+    fn new(x: i32, y: i32) -> Self {
+        Knots {
+            knots: [Rope::new(Coord::new2(x, y), Coord::new2(x, y)); Self::COUNT]
+        }
+    }
+
+    fn move_head(&mut self, mv: &Move) {
+        self.knots[0].move_head(mv);
+        for i in 1..Self::COUNT {
+            self.knots[i].position_head(self.knots[i-1].tail);
+        }
+    }
+
+    fn tail(&self) -> Coord {
+        self.knots[Self::COUNT - 1].tail
     }
 }
 
@@ -69,21 +99,21 @@ fn main() {
     let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
 
     // Parse input
-    let moves = input.split("\n").map(
+    let moves: Vec<Move> = input.split("\n").map(
         |line| {
             let mut parts = line.split(" ");
             let dir: &str = parts.next().unwrap();
             let amount: u32 = parts.next().unwrap().parse().unwrap();
             Move::new(dir, amount)
         }
-    );
+    ).collect();
 
     // Part 1
     let mut visits: HashSet<Coord> = HashSet::new();
     let mut rope = Rope::new(Coord::new2(0, 0), Coord::new2(0, 0));
-    for mv in moves {
+    for mv in &moves {
         for _ in 0..mv.amount {
-            rope.move_head(&mv);
+            rope.move_head(mv);
             visits.insert(rope.tail);
         }
     }
@@ -91,6 +121,17 @@ fn main() {
     println!("The tail visits {} unique coordinates", visits.len());
 
     // Part 2
+    let mut visits: HashSet<Coord> = HashSet::new();
+    let mut knots = Knots::new(0, 0);
+    for mv in &moves {
+        for _ in 0..mv.amount {
+            knots.move_head(mv);
+            visits.insert(knots.tail());
+        }
+    }
+
+    println!("The tail of 10 knots visits {} unique coordinates", visits.len())
+    // First attempt: 2446, too low.
 }
 
 #[cfg(test)]
