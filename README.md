@@ -5,6 +5,17 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 9
+[Day 9 prompt](https://adventofcode.com/2022/day/9)
+
+I thought it was smart to use my `Coord` util, but it probably ended up wasting time. However, it *was* smart to make the `Rope` class, because it was very easy to make a collection of them (`Knots`) and refactor it for use in part 2.
+
+### Lessons learned
+* Tuples are probably better than hand-rolling coordinate classes. A real 2d/3d math library might be better
+
+To do:
+- [ ] Pick a Rust 2d/3d math crate. Maybe `nalgebra`?
+
 ## Day 8
 [Day 8 prompt](https://adventofcode.com/2022/day/8)
 
