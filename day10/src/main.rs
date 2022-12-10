@@ -1,6 +1,8 @@
 mod processor;
 use processor::{Processor, Instruction};
 
+use grid::Grid;
+
 fn main() {
     // Read in the file provided as the first argument.
     let path = utils::args_iter().next().expect("Missing argument");
@@ -33,6 +35,29 @@ fn main() {
     println!("Sum of signal strengths is {signal_strengths}");
 
     // Part 2
+    let mut display: Grid<char> = Grid::new(6, 40);
+    let instructions: Vec<Instruction> = input.split("\n").map(|s| s.parse::<Instruction>().unwrap()).collect();
+    let mut processor = Processor::new(instructions);
+
+    while processor.clock <= 240 {
+        let cycle = processor.clock;
+        let pixel = cycle - 1;
+        let pixel_row = ((pixel / 40) % 6) as usize;
+        let pixel_col = (pixel % 40) as usize;
+        let sprite_rg = (processor.x-1)..=(processor.x+1);
+
+        if sprite_rg.contains(&(pixel_col as i32)) {
+            display[pixel_row][pixel_col] = '#'
+        } else {
+            display[pixel_row][pixel_col] = '.'
+        }
+        processor.tick();
+    }
+    
+    for row in 0..display.rows() {
+        let r: String = display.iter_row(row).collect();
+        println!("{r}");
+    }
 }
 
 #[cfg(test)]

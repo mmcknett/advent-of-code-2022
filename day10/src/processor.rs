@@ -24,7 +24,8 @@ pub struct Processor {
   pub clock: u64,
   program_iter: std::vec::IntoIter<Instruction>,
   stalled_instruction: Option<Instruction>,
-  instruction_stall: u8
+  instruction_stall: u8,
+  pub done: bool
 }
 
 impl Processor {
@@ -34,7 +35,8 @@ impl Processor {
       clock: 1, // To account for the "during" logic, start at 1 instead of 0.
       program_iter: program.into_iter(),
       stalled_instruction: None,
-      instruction_stall: 0
+      instruction_stall: 0,
+      done: false
     }
   }
 
@@ -55,8 +57,11 @@ impl Processor {
         self.instruction_stall = 1;
         // println!("Stalling Add({x})");
       },
-      Some(Instruction::Noop) => (), // println!("Noop"),
-      _ => self.instruction_stall = 0,
+      Some(Instruction::Noop) => self.instruction_stall = 0,
+      None => {
+        self.instruction_stall = 0;
+        self.done = true;
+      }
     }
   }
 
