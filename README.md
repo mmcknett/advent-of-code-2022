@@ -5,6 +5,37 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 11
+[Day 11 prompt](https://adventofcode.com/2022/day/11)
+
+Since I overdid parsing in previous days, I decided to just double down on splitting today. Oddly enough, that probably slowed me down, compared to picking LALRPOP! It basically took half an hour to parse each of the "monkeys" and turn their worry-increase operations into something where I didn't have to deal with `&str` lifetimes.
+
+Part 2 was the big boondoggle. I thought I might be able to brute-force it and figured out how to refactor it for `BigInt`s, but even those turned out to be exponential performance. The trick, I realized late, was to work in values mod whatever the product of the divisors was, since the remainder of a product is the product of the remainders. Same goes for sums.
+
+### Lessons learned
+* Sometimes it *is* better to use the fancy parser.
+
+## Day 10
+[Day 10 prompt](https://adventofcode.com/2022/day/10)
+
+Today was the off-by-one-error challenge day. I had a lot of trouble overthinking the processor "stall" logic, then had to hack around the fact that I was expecting to read the "X register" *after* an operation and not *during* an operation. For part 2, `Grid` came in handy, though I was disappointed that I couldn't find a straightforward `print` function. I ended up using:
+
+```rust
+for row in 0..display.rows() {
+        let r: String = display.iter_row(row).collect();
+        println!("{r}");
+    }
+```
+
+I realized after, though, that `Grid` has a prettier "alternate" representation, which would have been harder to read for this day, but might come in handy. Just use the standard "alternate" formatting:
+
+```rust
+print!("{:#?}", display);
+```
+
+### Lessons learned
+- Don't try to anticipate part 2. I assumed I'd get more instructions to add, which had longer stall times, and generalized the "instruction stall" feature. It was unnecessary for part 2 and confused me for part 1.
+
 ## Day 9
 [Day 9 prompt](https://adventofcode.com/2022/day/9)
 
