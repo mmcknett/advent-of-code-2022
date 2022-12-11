@@ -161,13 +161,3 @@ struct Monkey {
     monkey_idx_if_false: usize,
     inspect_count: u64
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day_11_test() {
-        assert_eq![1, 1]
-    }
-}
