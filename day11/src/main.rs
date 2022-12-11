@@ -45,20 +45,27 @@ fn main() {
     //     println!("{:?}", m);
     // }
 
-    const N: i32 = 600;
+    const N: i32 = 10000;
     for _ in 0..N {
         play_round(&mut monkeys, One::one() /* relief */);
     }
 
-    println!("After round {N}, monkeys are...");
-    for m in &monkeys {
-        println!("{:?}", m.items);
-    }
-    println!("");
+    // println!("After round {N}, monkeys are...");
+    // for m in &monkeys {
+    //     println!("{:?}", m.items);
+    // }
+    // println!("");
     println!("After {N} rounds, monkey inspection counts are...");
     for m in &monkeys {
         println!("{}", m.inspect_count);
     }
+
+    let mut monkey_business: Vec<u64> = monkeys.iter().map(|m| m.inspect_count).collect();
+    monkey_business.sort();
+    monkey_business.reverse();
+    let monkey_business = monkey_business[0] * monkey_business[1];
+    println!("Monkey business is {monkey_business}");
+
 }
 
 fn load_monkeys(monkey_blocks: &Vec<&str>) -> Vec<Monkey> {
@@ -81,11 +88,14 @@ fn load_monkeys(monkey_blocks: &Vec<&str>) -> Vec<Monkey> {
 }
 
 fn play_round(monkeys: &mut Vec<Monkey>, relief: BigUint) {
+    let common_divisor = monkeys.iter().map(|m| &m.divisor).product::<BigUint>();
+
     for i in 0..monkeys.len() {
         while let Some(item) = monkeys[i].items.pop_front() {
             // Inspect an item -- relief makes value be floor-divided by relief level.
             monkeys[i].inspect_count += 1;
             let worry_level = calc_new_worry(item, &monkeys[i].operation) / &relief;
+            let worry_level = worry_level % &common_divisor;
 
             // Monkey tests worry level
             if &worry_level % &monkeys[i].divisor == Zero::zero() {
