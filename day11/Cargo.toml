@@ -9,3 +9,5 @@ edition = "2021"
 path = "../utils"
 
 [dependencies]
+num-bigint = "*"
+num-traits = "*"
