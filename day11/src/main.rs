@@ -1,6 +1,4 @@
 use std::collections::VecDeque;
-use num_bigint::BigUint;
-use num_traits::{Zero, One};
 
 fn main() {
     // Read in the file provided as the first argument.
@@ -18,7 +16,7 @@ fn main() {
     // }
 
     for _ in 0..20 {
-        play_round(&mut monkeys, BigUint::from_slice(&[3]) /* relief */);
+        play_round(&mut monkeys, 3 /* relief */);
     }
 
     // println!("After round 20, monkeys are...");
@@ -47,7 +45,7 @@ fn main() {
 
     const N: i32 = 10000;
     for _ in 0..N {
-        play_round(&mut monkeys, One::one() /* relief */);
+        play_round(&mut monkeys, 1 /* relief */);
     }
 
     // println!("After round {N}, monkeys are...");
@@ -72,14 +70,14 @@ fn load_monkeys(monkey_blocks: &Vec<&str>) -> Vec<Monkey> {
     let mut monkeys = vec![];
     for block in monkey_blocks {
         let mut lines = block.split("\n").skip(1);
-        let items: VecDeque<BigUint> = lines.next().unwrap()
+        let items: VecDeque<u64> = lines.next().unwrap()
             .split("Starting items: ").skip(1).next().unwrap()
-            .split(", ").map(|s| s.parse::<BigUint>().unwrap()).collect();
+            .split(", ").map(|s| s.parse::<u64>().unwrap()).collect();
         let operation: Vec<&str> = lines.next().unwrap()
             .split(" = ").skip(1).next().unwrap()
             .split(" ").collect();
         let operation: Vec<Op> = Op::parse(operation);
-        let divisor = lines.next().unwrap().split(" by ").skip(1).next().unwrap().parse::<BigUint>().unwrap();
+        let divisor = lines.next().unwrap().split(" by ").skip(1).next().unwrap().parse::<u64>().unwrap();
         let monkey_idx_if_true = lines.next().unwrap().split(" ").last().unwrap().parse::<usize>().unwrap();
         let monkey_idx_if_false = lines.next().unwrap().split(" ").last().unwrap().parse::<usize>().unwrap();
         monkeys.push(Monkey { items, operation, divisor, monkey_idx_if_true, monkey_idx_if_false, inspect_count: 0 });
@@ -87,8 +85,8 @@ fn load_monkeys(monkey_blocks: &Vec<&str>) -> Vec<Monkey> {
     return monkeys;
 }
 
-fn play_round(monkeys: &mut Vec<Monkey>, relief: BigUint) {
-    let common_divisor = monkeys.iter().map(|m| &m.divisor).product::<BigUint>();
+fn play_round(monkeys: &mut Vec<Monkey>, relief: u64) {
+    let common_divisor = monkeys.iter().map(|m| &m.divisor).product::<u64>();
 
     for i in 0..monkeys.len() {
         while let Some(item) = monkeys[i].items.pop_front() {
@@ -98,7 +96,7 @@ fn play_round(monkeys: &mut Vec<Monkey>, relief: BigUint) {
             let worry_level = worry_level % &common_divisor;
 
             // Monkey tests worry level
-            if &worry_level % &monkeys[i].divisor == Zero::zero() {
+            if &worry_level % &monkeys[i].divisor == 0 {
                 let next_monkey = monkeys[i].monkey_idx_if_true;
                 monkeys[next_monkey].items.push_back(worry_level);
             } else {
@@ -109,7 +107,7 @@ fn play_round(monkeys: &mut Vec<Monkey>, relief: BigUint) {
     }
 }
 
-fn calc_new_worry(old: BigUint, ops: &Vec<Op>) -> BigUint {
+fn calc_new_worry(old: u64, ops: &Vec<Op>) -> u64 {
     let l = match &ops[0] {
         Op::Old => &old,
         Op::Num(x) => x,
@@ -133,7 +131,7 @@ enum Op {
     Old,
     Times,
     Plus,
-    Num(BigUint)
+    Num(u64)
 }
 
 impl Op {
@@ -146,7 +144,7 @@ impl Op {
             "old" => Op::Old,
             "*" => Op::Times,
             "+" => Op::Plus,
-            x if x.parse::<BigUint>().is_ok() => Op::Num(x.parse::<BigUint>().unwrap()),
+            x if x.parse::<u64>().is_ok() => Op::Num(x.parse::<u64>().unwrap()),
             _ => panic!("Invalid op!")
         }
     }
@@ -154,9 +152,9 @@ impl Op {
 
 #[derive(Debug, PartialEq, Eq)]
 struct Monkey {
-    items: VecDeque<BigUint>,
+    items: VecDeque<u64>,
     operation: Vec<Op>,
-    divisor: BigUint,
+    divisor: u64,
     monkey_idx_if_true: usize,
     monkey_idx_if_false: usize,
     inspect_count: u64
