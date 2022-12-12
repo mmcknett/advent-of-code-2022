@@ -5,6 +5,35 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 12
+[Day 12 prompt](https://adventofcode.com/2022/day/12)
+
+Today was BFS day! Find the shortest path given [whatever] constraints on going one square away, so naturally breadth-first-searching a grid is a good choice. I actually remembered all the pieces I needed for BFS this time around, and tried to learn my lesson from a recent interview experience and simplify the up/down/left/right inner loop. This worked out nicely:
+
+```rust
+let deltas: [(isize, isize); 4] = [(0, 1), (-1, 0), (0, -1), (1, 0)]; // right, up, left, down
+```
+
+Combine that with `checked_add_signed`, a nightly feature of 1.66.0 (and the realization that all I need to do to get those is `rustup install nightly` then `cargo +nightly run`!), to get a simple way to visit the neighbors with bounds-checking:
+
+```rust
+for (d_r, d_c) in &deltas {
+    let next_r = match curr_pt.0.checked_add_signed(*d_r) {
+        Some(val) if val < terrain.rows() => val,
+        _ => continue
+    };
+    // ...
+```
+
+The only issue I ran into with part 2 was that some lowest points couldn't reach the end; for that I just switched to returning an optional path length.
+
+### Lessons learned
+* It's easier than I thought to get unstable Rust features (or unreleased stabilized features)!
+    - `rustup install nightly`
+    - Add the feature to the top of `main.rs` (e.g. for today I added `#![feature(mixed_integer_ops)]`).
+    - Run with `+nightly`, e.g.: `cargo +nightly run input.txt`
+    - Add `"+nightly"` to the list of args in `launch.json` if you're set up for debugging like this project template has it. (I needed this for debugging part 2 where a path isn't always possible.)
+
 ## Day 11
 [Day 11 prompt](https://adventofcode.com/2022/day/11)
 
