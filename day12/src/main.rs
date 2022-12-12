@@ -42,14 +42,17 @@ fn main() {
     // Find the shortest path: breadth-first-search `terrain` starting from S
     // and add a back-link in backtrace for every square.
     // Then follow the links from E.
-    let step_count = min_steps_from_start(&terrain, &start, &end);
+    let step_count = min_steps_from_start(&terrain, &start, &end).unwrap();
 
     println!("It takes at least {step_count} steps.");
 
     // Part 2
+    let min_short_path = all_as.iter().filter_map(|st| min_steps_from_start(&terrain, &st, &end)).min().unwrap();
+
+    println!("The shortest path from any a is {min_short_path} steps.");
 }
 
-fn min_steps_from_start(terrain: &Grid<i32>, start: &Pt, end: &Pt) -> u32 {
+fn min_steps_from_start(terrain: &Grid<i32>, start: &Pt, end: &Pt) -> Option<u32> {
     let mut backtrace: Grid<Option<(usize, usize)>> = Grid::new(terrain.rows(), terrain.cols());
     let mut queue: VecDeque<Pt> = VecDeque::new();
     queue.push_back(start.clone());
@@ -83,10 +86,13 @@ fn min_steps_from_start(terrain: &Grid<i32>, start: &Pt, end: &Pt) -> u32 {
     let mut walkback = end.clone();
     while walkback != *start {
         step_count += 1;
-        walkback = backtrace[walkback.0][walkback.1].unwrap().clone();
+        walkback = match backtrace[walkback.0][walkback.1] {
+            Some(pt) => pt.clone(),
+            None => return None
+        }
     }
 
-    return step_count;
+    return Some(step_count);
 }
 
 #[cfg(test)]
