@@ -94,13 +94,3 @@ fn min_steps_from_start(terrain: &Grid<i32>, start: &Pt, end: &Pt) -> Option<u32
 
     return Some(step_count);
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day_12_test() {
-        assert_eq![1, 1]
-    }
-}
