@@ -1,6 +1,6 @@
 #![feature(mixed_integer_ops)]
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, vec};
 
 use grid::Grid;
 type Pt = (usize, usize);
@@ -15,18 +15,24 @@ fn main() {
     let mut terrain: Grid<i32> = Grid::new(lines.len(), lines[0].len());
     let mut start: Pt = (0, 0);
     let mut end: Pt = (0, 0);
+    let mut all_as: Vec<Pt> = vec![];
 
     for (row, line) in lines.into_iter().enumerate() {
         for (col, chr) in line.chars().enumerate() {
             terrain[row][col] = match chr {
                 'S' => {
                     start = (row, col);
+                    all_as.push((row, col));
                     'a' as i32
                 },
                 'E' => {
                     end = (row, col);
                     'z' as i32
                 },
+                'a' => {
+                    all_as.push((row, col));
+                    'a' as i32
+                }
                 c => c as i32
             }
         }
@@ -36,6 +42,14 @@ fn main() {
     // Find the shortest path: breadth-first-search `terrain` starting from S
     // and add a back-link in backtrace for every square.
     // Then follow the links from E.
+    let step_count = min_steps_from_start(&terrain, &start, &end);
+
+    println!("It takes at least {step_count} steps.");
+
+    // Part 2
+}
+
+fn min_steps_from_start(terrain: &Grid<i32>, start: &Pt, end: &Pt) -> u32 {
     let mut backtrace: Grid<Option<(usize, usize)>> = Grid::new(terrain.rows(), terrain.cols());
     let mut queue: VecDeque<Pt> = VecDeque::new();
     queue.push_back(start.clone());
@@ -67,14 +81,12 @@ fn main() {
 
     let mut step_count = 0;
     let mut walkback = end.clone();
-    while walkback != start {
+    while walkback != *start {
         step_count += 1;
         walkback = backtrace[walkback.0][walkback.1].unwrap().clone();
     }
 
-    println!("It takes at least {step_count} steps.");
-
-    // Part 2
+    return step_count;
 }
 
 #[cfg(test)]
