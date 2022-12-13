@@ -26,6 +26,17 @@ fn main() {
     println!("The sum of indices of pairs in the right order is {index_sum}");
 
     // Part 2
+    let mut packets: Vec<LorV> = input.split("\n").filter(|line| line != &"").map(|line| parser.parse(line).unwrap()).collect();
+    let divider_2 = LorV::L(vec![LorV::L(vec![LorV::V(2)])]);
+    let divider_6 = LorV::L(vec![LorV::L(vec![LorV::V(6)])]);
+    packets.push(divider_2.clone());
+    packets.push(divider_6.clone());
+    packets.sort();
+
+    let divider_2_idx = packets.iter().enumerate().find(|(_, p)| **p == divider_2).unwrap().0 + 1; // +1 for 1-based indexing.
+    let divider_6_idx = packets.iter().enumerate().find(|(_, p)| **p == divider_6).unwrap().0 + 1;
+    let decoder_key = divider_2_idx * divider_6_idx;
+    println!("The decoder key is {decoder_key}");
 }
 
 
