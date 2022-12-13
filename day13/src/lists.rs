@@ -13,31 +13,25 @@ impl Ord for LorV {
   fn cmp(&self, other: &Self) -> Ordering {
     match (self, other) {
       (V(l), V(r)) => l.cmp(r),
-      (L(v_l), V(r)) => L(v_l.clone()).cmp(&L(vec![V(*r)])),
-      (V(l), L(v_r)) => L(vec![V(*l)]).cmp(&L(v_r.clone())),
+      (L(_), V(r)) => self.cmp(&L(vec![V(*r)])),  // right becomes a list (x -> [x]), then re-compare
+      (V(l), L(_)) => L(vec![V(*l)]).cmp(&other), // left becomes a list (x -> [x]), then re-compare
       (L(v_l), L(v_r)) => {
         let remainder: (Vec<&LorV>, Vec<&LorV>) = v_l.iter().zip(v_r.iter())
           .skip_while(
             |(l, r)| l == r
           )
           .unzip();
-        match remainder {
-          (vec_l, vec_r) if vec_l.len() == 0 && vec_r.len() == 0 => {
-            // Everything was equal, but if the original lists are different sizes then they compare differently.
-            if v_l.len() < v_r.len() {
-              Ordering::Less
-            } else if v_l.len() > v_r.len() {
-              Ordering::Greater
-            } else {
-              Ordering::Equal
-            }
-          },
-          (_, vec_r) if vec_r.len() == 0 => Ordering::Greater,
-          (vec_l, vec_r) => if vec_l.len() == 0 { Ordering::Less } else { vec_l[0].cmp(vec_r[0]) }
+
+        let (vec_l, vec_r) = remainder;
+        if vec_l.len() == 0 || vec_r.len() == 0 {
+          // If one of the two zipped lists runs out, unzip returns empty lists for both.
+          // When both unzipped lists are empty, we *may* have only run out of *one* of the lists while ignoring equal things.
+          // In that case, it's the lengths of the original lists that matters.
+          v_l.len().cmp(&v_r.len())
+        } else {
+          // We stopped in a place where two things were *not* equal, so return whether those things are greater or less.
+          vec_l[0].cmp(vec_r[0])
         }
-      }
-      _ => {
-        panic!("Can't compare!");
       }
     }
   }
