@@ -29,7 +29,7 @@ impl Ord for LorV {
             } else if v_l.len() > v_r.len() {
               Ordering::Greater
             } else {
-            Ordering::Equal
+              Ordering::Equal
             }
           },
           (_, vec_r) if vec_r.len() == 0 => Ordering::Greater,
