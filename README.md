@@ -5,6 +5,21 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 13
+[Day 13 prompt](https://adventofcode.com/2022/day/13)
+
+I can't tell how much time I wasted today. Part 1 took a lot of time because I decided to use an `enum` type to handle the lists-or-values aspects of the packets. I decided to overload the `<=` operator for the type because I realized it's fundamentally what I was writing. I think that implementing the `PartialOrd` interface for the type was *technically* overkill, since we didn't care as much about equality, but it did make writing the logic a little more straightforward. That decision ended up making part 2 dead simple, because I could just sort the vector of packets. (`LorV`s, in my implementation. Probably should have called it `Packet`; whoops.)
+
+So ultimately, I spent an hour and a half setting up the parsing and ordering of the packet type, then debugging all that for part 1, just to make part 2 take 10 minutes. I guess I must not have wasted *too* much time, since I got my 3rd best ranking with it even after an hour-delayed start.
+
+### Lessons learned
+* Pay attention to the problem asking for 1-based indexing.
+* It pays to use standard operators (overloading `<=` for my enum type meant I could finish part 2 very quickly).
+* `unzip` did something I didn't expect -- if I skipped `zip`'d iterators until one of those iterators ran out, calling `unzip` would yield two empty vectors instead of an empty vector paired with the remainder of the other vector.
+  * This ate up some debugging time while I tried to figure out my `<=` algorithm.
+  * Turns out, I *should* have just used the built-in `Vec` `cmp` method. :facepalm:
+  * BUT, at least I have learned how [I could rewrite vector comparison using iterators](https://github.com/mmcknett/advent-of-code-2022/blob/ac5c8d58b734fc6077144e19bec37cbc36439191/day13/src/lists.rs#L18-L34). So that's fun.
+
 ## Day 12
 [Day 12 prompt](https://adventofcode.com/2022/day/12)
 
