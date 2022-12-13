@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::cmp::Eq;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum LorV {
   L(Vec<LorV>),
   V(i32)
@@ -25,17 +25,6 @@ impl PartialOrd for LorV {
       Some(self.cmp(other))
   }
 }
-
-impl PartialEq for LorV {
-  fn eq(&self, other: &Self) -> bool {
-    match (self, other) {
-      (V(l), V(r)) => l == r,
-      (lhs, rhs) => lhs.cmp(&rhs) == Ordering::Equal
-    }
-  }
-}
-
-impl Eq for LorV {}
 
 #[cfg(test)]
 mod tests {
