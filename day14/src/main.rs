@@ -23,6 +23,12 @@ fn main() {
     println!("Part 1: Number of sand units that come to rest is {num_sands}");
 
     // Part 2
+    let mut walls = get_walls(&polys);
+    let mut num_sands = 0;
+    while drop_one_sand_part2(&mut walls, bottom) {
+        num_sands += 1;
+    }
+    println!("Part 2: Number of sand units that come to rest is {num_sands}");
 }
 
 fn get_walls(polys: &Vec<Vec<Coord>>) -> HashSet<Coord> {
@@ -77,6 +83,36 @@ fn drop_one_sand(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
 
     // Sand passed the bottom-most coordinate, so it will fall forever.
     return false;
+}
+
+// Return true if the sand fell; false if the last drop blocked the source.
+fn drop_one_sand_part2(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
+    let mut sand = Coord::new2(500,0);
+
+    if walls.contains(&sand) {
+        return false;
+    }
+
+    'outer: while sand.y <= bottom {
+        let dirs = [
+            Coord::new2(sand.x, sand.y+1),   // down
+            Coord::new2(sand.x-1, sand.y+1), // down, left
+            Coord::new2(sand.x+1, sand.y+1)  // down, right
+        ];
+        for direction in dirs {
+            if walls.contains(&direction) {
+                continue; // Try the next direction.
+            } else {
+                sand = direction; // This direction isn't blocked; go that way.
+                continue 'outer;
+            }
+        }
+        break;
+    }
+
+    // We hit the bottom. Don't bother looking farther down.
+    walls.insert(sand);
+    return true;
 }
 
 #[cfg(test)]
