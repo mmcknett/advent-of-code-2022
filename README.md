@@ -5,6 +5,35 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 14
+[Day 14 prompt](https://adventofcode.com/2022/day/14)
+
+I opted to use a set of points instead of a grid for this one. I got a little ratholed trying to decide if Rust would do something reasonable with a backward range like `5..=2`. It doesn't; I resorted to `min(y1, y2)..=max(y1, y2)`. My `Coord` struct and the existing parser for it came in handy, though I did need to make it handle multiple `"->"`-separated coordinates (vs. parsing just two coords to make a line).
+
+I learned that Rust lets you label nested loops so you can have finer-grained control over break & continue. That was handy! It let me do an inner for loop over the three directions and have control over the loops like:
+
+```rust
+'outer: while /* ... */ {
+    // ...
+    for /* ... */ {
+        if /* ... */ {
+            continue; // skip to the next inner-loop thing
+        } else {
+            // ...
+            continue 'outer; // Finish early with the inner loop
+        }
+    }
+
+    // ...
+    return true; // Running out of the inner loop ever means the function terminates!
+}
+
+return false; // Running out of the outer loop means the function terminates differently.
+```
+
+### Lessons learned
+* Don't fiddle with "backward" ranges, just use `min` and `max` to get the right forward range.
+
 ## Day 13
 [Day 13 prompt](https://adventofcode.com/2022/day/13)
 
