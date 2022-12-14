@@ -35,18 +35,18 @@ fn get_walls(polys: &Vec<Vec<Coord>>) -> HashSet<Coord> {
     let mut walls: HashSet<Coord> = HashSet::new();
 
     for poly in polys {
-        for window in poly.windows(2) {
-            let cs = window[0];
-            let ce = window[1];
-            if cs.x == ce.x {
-                // Add every point in between cs and ce varying y
-                for y in min(cs.y, ce.y)..=max(cs.y, ce.y) {
-                    walls.insert(Coord::new2(cs.x, y));
+        for line in poly.windows(2) {
+            let start = line[0];
+            let end = line[1];
+            if start.x == end.x {
+                // Add every point in between start and end varying y
+                for y in min(start.y, end.y)..=max(start.y, end.y) {
+                    walls.insert(Coord::new2(start.x, y));
                 }
-            } else if cs.y == ce.y {
-                // Add every point in between cs and ce varying x
-                for x in min(cs.x, ce.x)..=max(cs.x, ce.x) {
-                    walls.insert(Coord::new2(x, cs.y));
+            } else if start.y == end.y {
+                // Add every point in between start and end varying x
+                for x in min(start.x, end.x)..=max(start.x, end.x) {
+                    walls.insert(Coord::new2(x, start.y));
                 }
             } else {
                 panic!("No diagonals!");
