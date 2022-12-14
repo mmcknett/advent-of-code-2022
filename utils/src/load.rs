@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use lalrpop_util::*;
 lalrpop_mod!(pub load_parser);
 lalrpop_mod!(pub range_parser);
@@ -44,6 +46,12 @@ fn test_day8_2021_lines() {
 fn test_coord2ds() {
   assert_eq!(format!["{:?}", parse_line2d("2,3 -> 6,9")], "Line { s: Coord { x: 2, y: 3, z: 0 }, e: Coord { x: 6, y: 9, z: 0 } }");
   assert_eq!(format!["{:?}", parse_line2d("-2,-3 -> -6,-9")], "Line { s: Coord { x: -2, y: -3, z: 0 }, e: Coord { x: -6, y: -9, z: 0 } }");
+}
+
+#[test]
+fn test_poly() {
+  let parser = coord_2d_parser::PolyParser::new();
+  assert_eq![format!["{:?}", parser.parse("4, 4 -> 5,5 -> 292,2").unwrap()], "[Coord { x: 4, y: 4, z: 0 }, Coord { x: 5, y: 5, z: 0 }, Coord { x: 292, y: 2, z: 0 }]"];
 }
 
 #[cfg(test)]

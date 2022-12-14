@@ -10,6 +10,11 @@ pub Line2d: Line = {
   <s:Coord2d> "->" <e:Coord2d> => Line::new(s, e)
 }
 
+pub Poly: Vec<Coord> = {
+  <mut r:Poly> "->" <last:Coord2d> => {r.push(last); r},
+  <s:Coord2d> => vec![s]
+}
+
 Coord2d: Coord = {
   <x:Int32> "," <y:Int32> => Coord::new(x, y, 0)
 }
