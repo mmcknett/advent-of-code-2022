@@ -58,7 +58,7 @@ fn get_walls(polys: &Vec<Vec<Coord>>) -> HashSet<Coord> {
 }
 
 // Return true if the sand stops, false if it fell forever.
-fn drop_one_sand(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
+fn drop_one_sand(walls: &mut HashSet<Coord>, bottom: i32) -> bool {
     let mut sand = Coord::new2(500,0);
 
     'outer: while sand.y <= bottom {
@@ -86,7 +86,7 @@ fn drop_one_sand(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
 }
 
 // Return true if the sand fell; false if the last drop blocked the source.
-fn drop_one_sand_part2(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
+fn drop_one_sand_part2(walls: &mut HashSet<Coord>, bottom: i32) -> bool {
     let mut sand = Coord::new2(500,0);
 
     if walls.contains(&sand) {
@@ -113,14 +113,4 @@ fn drop_one_sand_part2(mut walls: &mut HashSet<Coord>, bottom: i32) -> bool {
     // We hit the bottom. Don't bother looking farther down.
     walls.insert(sand);
     return true;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day_14_test() {
-        
-    }
 }

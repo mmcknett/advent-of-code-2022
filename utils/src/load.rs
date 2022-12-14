@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use lalrpop_util::*;
 lalrpop_mod!(pub load_parser);
 lalrpop_mod!(pub range_parser);
