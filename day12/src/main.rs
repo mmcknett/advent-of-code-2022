@@ -1,5 +1,3 @@
-#![feature(mixed_integer_ops)]
-
 use std::{collections::VecDeque, vec};
 
 use grid::Grid;
