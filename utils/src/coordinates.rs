@@ -39,4 +39,13 @@ impl Line {
       e: end
     }
   }
+
+  pub fn manhattan(&self) -> i32 {
+    (self.s.x - self.e.x).abs() + (self.s.y - self.e.y).abs()
+  }
+}
+
+#[test]
+fn manhattan() {
+  assert_eq!(Line::new(Coord::new2(2, 9), Coord::new2(5, 2)).manhattan(), 10);
 }

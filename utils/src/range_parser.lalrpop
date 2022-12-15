@@ -4,12 +4,12 @@ use lalrpop_util::ParseError;
 grammar;
 
 use crate::ranges::Range;
-pub RangePair: (Range, Range) = {
+pub RangePair: (Range<u32>, Range<u32>) = {
   <Range> "," <Range> => (<>)
 }
 
-Range: Range = {
-  <U32> "-" <U32> => Range::new(<>)
+Range: Range<u32> = {
+  <U32> "-" <U32> => Range::<u32>::new(<>)
 }
 
 U32: u32 = {

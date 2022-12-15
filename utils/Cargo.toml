@@ -12,3 +12,4 @@ lalrpop = "0.19.7"
 # lexer feature directive via: https://github.com/lalrpop/lalrpop/issues/650#issuecomment-1032308454
 lalrpop-util = { version = "^0.19", features = ["lexer"] }
 regex = "1"
+num = "*"
