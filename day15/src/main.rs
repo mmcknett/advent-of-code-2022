@@ -46,7 +46,7 @@ fn ranges_for_y(sensor_beacons: &Vec<Line>, y: i32) -> Vec<Range<i32>> {
     ranges.sort();
     let mut final_ranges: Vec<Range<i32>> = vec![ranges[0]];
     for rg in ranges.iter() {
-        if let Some(combined) = combine(rg, &final_ranges.iter().last().unwrap()) {
+        if let Some(combined) = rg.combine(&final_ranges.iter().last().unwrap()) {
             final_ranges.pop();
             final_ranges.push(combined);
         } else {
@@ -65,15 +65,6 @@ fn range_for_y(sensor_beacon: &Line, y: i32) -> Option<Range<i32>> {
     }
 
     return Some(Range::new(sensor_beacon.s.x - rem, sensor_beacon.s.x + rem));
-}
-
-fn combine(rg1: &Range<i32>, rg2: &Range<i32>) -> Option<Range<i32>> {
-    if rg1.overlaps(rg2) || rg1.adjacent(rg2) {
-        let combined = Range::new(min(rg1.start, rg2.start), max(rg1.end, rg2.end));
-        return Some(combined);
-    }
-
-    None
 }
 
 #[cfg(test)]
