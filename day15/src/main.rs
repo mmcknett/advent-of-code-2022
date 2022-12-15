@@ -21,6 +21,27 @@ fn main() {
 
     // Part 1
     let y = if path.contains("sample.txt") { 10 } else { 2000000 };
+    let final_ranges = ranges_for_y(&sensor_beacons, y);
+
+    let positions: i32 = final_ranges.iter().map(|rg| rg.size()).sum();
+
+    println!("Positions where no beacon can be: {}", positions);
+
+    // Part 2
+    const TUNING_FREQUENCY: i32 = 4_000_000;
+    let max_beacon: i32 = if path.contains("sample.txt") { 20 } else { TUNING_FREQUENCY };
+
+    let (possible_range, y): (Vec<Range<i32>>, i32) = (0..=max_beacon).map(|y| (ranges_for_y(&sensor_beacons, y), y)).filter(|(v, _)| v.len() > 1).next().unwrap();
+    
+
+    let x = possible_range[0].end + 1;
+    let tuning = (x as i64 * TUNING_FREQUENCY as i64) + y as i64;
+    println!("The tuning frequency is {tuning}");
+    // Tried 2014772348, but that's too low.
+    // I needed to use larger ints to calculate tuning!
+}
+
+fn ranges_for_y(sensor_beacons: &Vec<Line>, y: i32) -> Vec<Range<i32>> {
     let mut ranges: Vec<Range<i32>> = sensor_beacons.iter().filter_map(|sb| range_for_y(sb, y)).collect();
     ranges.sort();
     let mut final_ranges: Vec<Range<i32>> = vec![ranges[0]];
@@ -32,12 +53,7 @@ fn main() {
             final_ranges.push(rg.clone());
         }
     }
-
-    let positions: i32 = final_ranges.iter().map(|rg| rg.size()).sum();
-
-    println!("Positions where no beacon can be: {}", positions);
-
-    // Part 2
+    return final_ranges;
 }
 
 // Gets the range of x-values that are covered by a sensor for a given y-value
