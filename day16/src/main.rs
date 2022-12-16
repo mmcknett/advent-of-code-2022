@@ -1,4 +1,5 @@
 #[macro_use] extern crate scan_fmt;
+use core::time;
 use std::collections::{HashMap, HashSet};
 
 type Valve = String;
@@ -24,54 +25,14 @@ fn main() {
     // Make a list of all of the valves that aren't 0-flow-rate.
     // Starting at AA, find the next-maximal valve to go turn on, accounting for time to walk there and turn it on.
     // Keep finding the next-maximal valve.
-    let mut positive_valves: HashMap<Valve, u32> = instructions.iter().filter_map(
+    let positive_valves: HashMap<Valve, u32> = instructions.iter().filter_map(
         |ins|
             if ins.1 > 0 { Some((ins.0.clone(), ins.1)) } else { None }
         ).collect();
-    let mut start: Valve = "AA".to_string();
-    let mut minutes_remain: u32 = 30;
-    let mut pressure_released: u32 = 0;
-    let mut pressure_per_minute: u32 = 0;
-    let mut opened_valves: Vec<Valve> = vec![];
+    let start: Valve = "AA".to_string();
+    let minutes_remain: u32 = 17; //30;
 
-    while minutes_remain > 0 {
-        let mut max_release: u32 = 0;
-        let mut positive_valve_with_max: Option<(&Valve, &u32)> = None;
-        let mut walk_time_of_max: u32 = 0;
-
-        for valve in &positive_valves {
-            // Find the valve that will maximize pressure release and walk to it.
-            let walk_time = time_to_reach(&start, &valve.0, &tunnels, &mut HashSet::new());
-            if walk_time > minutes_remain {
-                continue;
-            }
-
-            let release_time = minutes_remain - walk_time;
-            let max_release_this_valve = release_time * valve.1;
-
-            if max_release < max_release_this_valve || positive_valve_with_max.is_none() {
-                max_release = max_release_this_valve;
-                positive_valve_with_max = Some(valve.clone());
-                walk_time_of_max = walk_time;
-            }
-        }
-
-        // Walk to and open the valve.
-        let time_spent = std::cmp::min(walk_time_of_max + 1, minutes_remain);
-        for _ in 0..time_spent {
-            minutes_remain -= 1;
-            pressure_released += pressure_per_minute;
-            let minute = 30 - (minutes_remain);
-            println!("Minute {minute}: Valves {:?} open, releasing {pressure_per_minute} pressure.", opened_valves);
-        }
-
-        if let Some(positive_valve) = positive_valve_with_max {
-            pressure_per_minute += positive_valve_with_max.or(Some((&String::new(), &0u32))).unwrap().1;
-            opened_valves.push(positive_valve.0.clone());
-            start = positive_valve.0.clone();
-            positive_valves.remove(&positive_valve.0.clone());
-        }
-    }
+    let pressure_released = find_max_release(&start, &tunnels, &positive_valves, minutes_remain, 0 /* current_release */);
 
     println!("Max pressure release is: {pressure_released}");
     // Tried 1021, but that's too low. <-- fixed the algorithm
@@ -80,22 +41,44 @@ fn main() {
     // Part 2
 }
 
-fn time_to_reach(start: &Valve, dest: &Valve, tunnels: &Tunnels, visited: &mut HashSet<Valve>) -> u32 {
-    if visited.contains(start) {
-        return u32::MAX;
-    }
-
-    if start == dest {
+fn find_max_release(curr: &Valve, tunnels: &Tunnels, positive_valves: &HashMap<Valve, u32>, time_remain: u32, current_release: u32) -> u32 {
+    // println!("Visiting {curr} with {time_remain} remaining");
+    if time_remain == 0 {
+        // println!("Out of time");
         return 0;
     }
 
-    visited.insert(start.clone());
-    return tunnels.get(start).expect("Valve not found?").iter()
-        .map(
-            |next_valve| time_to_reach(next_valve, dest, tunnels, visited)
-        ).min().unwrap()
-        .checked_add(1)
-        .or(Some(u32::MAX)).unwrap();
+    if positive_valves.is_empty() {
+        // Nothing worth walking to, so use the remaining time to release at the current rate.
+        let result = time_remain * current_release;
+        // println!("Shortcutting at {time_remain}, max is {result}");
+        return result;
+    }
+
+    // Try releasing this valve. Drop the current valve from positive valves.
+    let max_release_this = match positive_valves.get(curr) {
+        None => 0,
+        Some(c) => find_max_release(
+            curr,
+            tunnels,
+            &positive_valves.iter().filter(
+                |(valve, _)| *valve != curr
+            ).map(
+                |pair| ((*pair.0).clone(), *pair.1)
+            ).collect(), // Copy the valves w/ values
+            time_remain - 1,
+            current_release + c)
+    };
+
+    // Try going down all the connecting tunnels instead.
+    let max_connection = tunnels.get(curr).unwrap().iter().map(
+        |connection|
+            find_max_release(connection, tunnels, positive_valves, time_remain - 1, current_release)
+    ).max().unwrap();
+
+    let result = current_release + std::cmp::max(max_release_this, max_connection);
+    // println!("From {curr} with {time_remain} remaining, max was {result}");
+    return result;
 }
 
 #[cfg(test)]
