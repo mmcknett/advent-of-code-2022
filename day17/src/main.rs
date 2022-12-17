@@ -29,6 +29,8 @@ impl<'input> Board<'input> {
             if stopped {
                 count += 1;
                 self.start_new_shape(count);
+
+                // println!("\n{}", self);
             }
         }
 
@@ -137,9 +139,15 @@ impl<'input> Board<'input> {
         // Find the first empty row, make sure there are three empty lines above it.
         let first_empty = self.board.iter().find_position(|line| line.iter().all(|c| c == &'.'));
         let first_empty = if first_empty.is_some() { first_empty.unwrap().0 } else { 0 };
-        let lines_to_add = 3_usize.checked_sub(self.board.len() - first_empty).unwrap_or(0);
-        for _ in 0..lines_to_add {
-            self.board.push(['.'; 7]);
+        let lines_to_add: i32 = 3 - (self.board.len() - first_empty) as i32;
+        if lines_to_add < 0 {
+            for _ in lines_to_add..0 {
+                self.board.pop();
+            }
+        } else {
+            for _ in 0..lines_to_add {
+                self.board.push(['.'; 7]);
+            }
         }
 
         fn to_array<const N: usize>(s: &str) -> [char; N] {
