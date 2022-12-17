@@ -2,9 +2,11 @@ use std::{fmt, process::id};
 use itertools::Itertools;
 
 struct Board<'input> {
-    board: Vec<[char; 7]>,
+    board: Vec<u8>,
     elided_height: u64,
-    jets: &'input str
+    jets: &'input str,
+    shape_fall: Vec<u8>,
+    shape_idx: usize
 }
 
 impl<'input> Board<'input> {
@@ -12,7 +14,9 @@ impl<'input> Board<'input> {
         Self {
             board: vec![],
             jets,
-            elided_height: 0
+            elided_height: 0,
+            shape_fall: vec![],
+            shape_idx: 0
         }
     }
 
@@ -42,8 +46,8 @@ impl<'input> Board<'input> {
             }
         }
 
-        // Find the highest '#'
-        let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|row| row.contains(&'#')).unwrap().0 as u64;
+        // Find the highest row that has a '#' (i.e. is >0)
+        let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|&&row| row > 0).unwrap().0 as u64;
         println!("Highest is {highest}, board length is {}", self.board.len());
         return highest + self.elided_height;
     }
@@ -60,10 +64,7 @@ impl<'input> Board<'input> {
             .rev()
             .find_position(
                 |windows| 
-                    windows[0].iter().zip(windows[1])
-                    .all(
-                        |(&c0, c1)| c0 == '#' || c1 == '#'
-                    )
+                    windows[0] | windows[1] == 0b111_1111
             );
         if position_elem.is_none() {
             return;
@@ -76,102 +77,65 @@ impl<'input> Board<'input> {
 
     // Returns true if falling stopped.
     fn fall(&mut self) -> bool {
-        // Make the @ blocks fall by 1 or freeze into #.
-        let first_falling = self.board.iter().find_position(|line| line.contains(&'@'));
-        if first_falling.is_none() {
-            panic!("Add a rock before calling fall!");
-        }
-        
-        let first_idx = first_falling.unwrap().0;
-        if first_idx == 0 {
-            // At the bottom; lock all @s to #.
-            for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-                self.board[i] = self.board[i].map(|c| if c == '@' { '#' } else { c });
+        // If we're at the bottom, freeze it where it is.
+        if self.shape_idx == 0 {
+            // Lock the shape into the board.
+            for i in 0..self.shape_fall.len() {
+                self.board[i] |= self.shape_fall[i];
             }
+            self.shape_fall.clear();
             return true;
         }
 
-        // See if any @s collide.
-        let mut collision = false;
-        'outer: for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-            for col in 0..7 {
-                if self.board[i][col] == '@' && self.board[i-1][col] == '#' {
-                    collision = true;
-                    break 'outer;
-                }
+        // If the shape falling would collide with anything, freeze it where it is.
+        if self.board.iter().skip(self.shape_idx - 1).zip(self.shape_fall.iter()).any(|(b, s)| b & s > 0) {
+            // Lock the shape into the board.
+            for i in 0..self.shape_fall.len() {
+                self.board[i + self.shape_idx] |= self.shape_fall[i];
             }
-        }
-
-        if collision {
-            // Collision; lock all @s to #.
-            for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-                self.board[i] = self.board[i].map(|c| if c == '@' { '#' } else { c });
-            }
+            self.shape_fall.clear();
             return true;
         }
 
-        // No collision; Move down.
-        for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-            for col in 0..7 {
-                if self.board[i][col] == '@' {
-                    self.board[i-1][col] = '@';
-                    self.board[i][col] = '.';
-                }
-            }
-        }
-
+        self.shape_idx -= 1;
         return false;
     }
 
     fn push(&mut self, dir: char) {
-        // Make the @ blocks fall by 1 or freeze into #.
-        let first_falling = self.board.iter().find_position(|line| line.contains(&'@'));
-        if first_falling.is_none() {
-            panic!("Add a rock before calling push!");
-        }
-        
-        let first_idx = first_falling.unwrap().0;
-
-        let offset: i32 = match dir {
-            '<' => -1,
-            '>' => 1,
-            _ => panic!("Invalid push!")
+        // Skip pushing if any part of the shape would hit a wall
+        // (i.e. a 1 is on the left or right for any line of the shape, depending on direction.)
+        let wall_collide = match dir {
+            '<' => self.shape_fall.iter().any(|&bits| bits & 0b100_0000 > 0),
+            '>' => self.shape_fall.iter().any(|&bits| bits & 0b000_0001 > 0),
+            _ => panic!("Impossible!")
         };
-
-        // Look for collision against # or wall
-        for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-            for col in 0..7 {
-                if self.board[i][col] == '@' &&
-                   (
-                    (col as i32 + offset) < 0 ||
-                    (col as i32 + offset) >= 7 ||
-                    self.board[i][(col as i32 + offset) as usize] == '#'
-                   )
-                {
-                    return; // No push on collision.
-                }
-            }
+        if wall_collide {
+            return;
         }
 
-        // No collision, so push toward the offset
-        let iter: Vec<usize> = match dir {
-            '>' => (0..7).rev().collect(),
-            '<' => (0..7).collect(),
-            _ => panic!("Invalid direction!")
-        };
-        for i in first_idx..(std::cmp::min(first_idx + 4, self.board.len())) {
-            for &col in &iter {
-                if self.board[i][col] == '@' {
-                    self.board[i][(col as i32 + offset) as usize] = '@';
-                    self.board[i][col] = '.';
-                }
-            }
+        // Move the shape in the direction to check for board collisions.
+        let moved: Vec<u8> = self.shape_fall.iter()
+            .map(
+                |&bits|
+                    match dir {
+                        '<' => bits << 1,
+                        '>' => bits >> 1,
+                        _ => panic!("Impossible!")
+                    }
+            ).collect();
+
+        let collision = self.board.iter().skip(self.shape_idx).zip(moved.iter()).any(
+            |(&b, &m)| b & m > 0
+        );
+
+        if !collision {
+            self.shape_fall = moved;
         }
     }
 
     fn start_new_shape(&mut self, counter: u64) {
         // Find the first empty row, make sure there are three empty lines above it.
-        let first_empty = self.board.iter().find_position(|line| line.iter().all(|c| c == &'.'));
+        let first_empty = self.board.iter().find_position(|&&bits| bits == 0);
         let first_empty = if first_empty.is_some() { first_empty.unwrap().0 } else { 0 };
         let lines_to_add: i32 = 3 - (self.board.len() - first_empty) as i32;
         if lines_to_add < 0 {
@@ -180,47 +144,91 @@ impl<'input> Board<'input> {
             }
         } else {
             for _ in 0..lines_to_add {
-                self.board.push(['.'; 7]);
+                self.board.push(0);
             }
         }
-
-        fn to_array<const N: usize>(s: &str) -> [char; N] {
-            let mut chars = s.chars();
-            [(); N].map(|_| chars.next().unwrap())
-        }
     
+        self.shape_idx = self.board.len();
         match counter % 5 {
             0 => {
-                self.board.push(to_array("..@@@@."));
+                self.shape_fall.push(0b0011110);
+                self.board.push(0);
             },
             1 => {
-                self.board.push(to_array("...@..."));
-                self.board.push(to_array("..@@@.."));
-                self.board.push(to_array("...@..."));
+                self.shape_fall.push(0b0001000);
+                self.shape_fall.push(0b0011100);
+                self.shape_fall.push(0b0001000);
+                for _ in 0..3 { self.board.push(0); }
             },
             2 => {
-                self.board.push(to_array("..@@@.."));
-                self.board.push(to_array("....@.."));
-                self.board.push(to_array("....@.."));
+                self.shape_fall.push(0b0011100);
+                self.shape_fall.push(0b0000100);
+                self.shape_fall.push(0b0000100);
+                for _ in 0..3 { self.board.push(0); }
             },
             3 => {
-                self.board.push(to_array("..@...."));
-                self.board.push(to_array("..@...."));
-                self.board.push(to_array("..@...."));
-                self.board.push(to_array("..@...."));
+                self.shape_fall.push(0b0010000);
+                self.shape_fall.push(0b0010000);
+                self.shape_fall.push(0b0010000);
+                self.shape_fall.push(0b0010000);
+                for _ in 0..4 { self.board.push(0); }
             },
             4 => {
-                self.board.push(to_array("..@@..."));
-                self.board.push(to_array("..@@..."));
+                self.shape_fall.push(0b0011000);
+                self.shape_fall.push(0b0011000);
+                for _ in 0..2 { self.board.push(0); }
             },
             _ => panic!("Impossible!")
         }
     }
 }
 
+fn bits_to_str(bits: u8, onechar: char) -> String {
+    let mut mask = 0b0100_0000;
+    let mut res = String::new();
+    while mask > 0 {
+        match mask & bits {
+            0 => res.push('.'),
+            _ => res.push(onechar)
+        }
+        mask >>= 1;
+    }
+    return res;
+}
+
+fn bits_merge_to_str(board: u8, shape: u8) -> String {
+    let mut mask = 0b0100_0000;
+    let mut res = String::new();
+    while mask > 0 {
+        if mask & shape > 0 {
+            res.push('@');
+        } else if mask & board > 0 {
+            res.push('#');
+        } else {
+            res.push('.');
+        }
+        mask >>= 1;
+    }
+    return res;
+}
+
 impl fmt::Display for Board<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let res = self.board.iter().rev().map(|arr| arr.iter().collect::<String>()).join("\n");
+        let mut res: Vec<String> = self.board.iter().take(self.shape_idx).map(|&bits| bits_to_str(bits, '#')).collect();
+        res.extend(
+            self.board.iter().skip(self.shape_idx).take(self.shape_fall.len()).zip(self.shape_fall.iter()).map(
+                |(&b, &s)| bits_merge_to_str(b, s)
+            )
+        );
+        res.extend(self.board.iter().skip(self.shape_idx + self.shape_fall.len()).map(|&bits| bits_to_str(bits, '#')));
+
+        if self.shape_idx >= self.board.len() {
+            res.extend(self.shape_fall.iter().map(|&bits| bits_to_str(bits, '@')));
+        }
+
+        res.reverse();
+        let res = res.join("\n");
+        
         let elision_msg = if self.elided_height > 0 { format!["\n[and {} rows removed]", self.elided_height] } else { "".to_string() };
         write!(f, "{}{}", res, elision_msg)
     }
