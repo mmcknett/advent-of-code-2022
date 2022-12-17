@@ -1,8 +1,9 @@
-use std::fmt;
+use std::{fmt, process::id};
 use itertools::Itertools;
 
 struct Board<'input> {
     board: Vec<[char; 7]>,
+    elided_height: u64,
     jets: &'input str
 }
 
@@ -10,34 +11,67 @@ impl<'input> Board<'input> {
     fn new(jets: &'input str) -> Self {
         Self {
             board: vec![],
-            jets
+            jets,
+            elided_height: 0
         }
     }
 
     // Simulates blocks falling and being pushed by jets
     // Returns the tower height after a number of steps.
-    fn simulate(&mut self) -> u32 {
-        const CYCLES: u32 = 2022;
-        let mut count = 0;
+    fn simulate(&mut self, cycles: u64) -> u64 {
+        let mut count = 0u64;
         let mut jetiter = self.jets.chars().cycle();
 
         self.start_new_shape(count);
 
-        while count < CYCLES {
+        while count < cycles {
             self.push(jetiter.next().unwrap());
             let stopped = self.fall();
             if stopped {
+                // Find the highest location where two rows cut off any access below them.
+                // Elide the board by removing lower row and cache the elided height at that point.
+                self.elide();
+
                 count += 1;
                 self.start_new_shape(count);
 
                 // println!("\n{}", self);
+                if count % 10_000_000 == 0 {
+                    println!("At {}, elided height is {}", count, self.elided_height);
+                }
             }
         }
 
         // Find the highest '#'
-        let highest = self.board.len() as u32 - self.board.iter().rev().find_position(|row| row.contains(&'#')).unwrap().0 as u32;
+        let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|row| row.contains(&'#')).unwrap().0 as u64;
         println!("Highest is {highest}, board length is {}", self.board.len());
-        return highest;
+        return highest + self.elided_height;
+    }
+
+    fn elide(&mut self) {
+        // Find the highest two rows where there is a # in either row for each column. E.g.
+        // .#..#..
+        // #.#####
+        // These are impassable, so remove the bottom most row and add its height to the elided height.
+
+        // Find the first two rows (backward) where, for each column, one or both of the rows has a '#'
+        let position_elem = self.board
+            .windows(2)
+            .rev()
+            .find_position(
+                |windows| 
+                    windows[0].iter().zip(windows[1])
+                    .all(
+                        |(&c0, c1)| c0 == '#' || c1 == '#'
+                    )
+            );
+        if position_elem.is_none() {
+            return;
+        }
+
+        let idx_to_elide = self.board.len() - (position_elem.unwrap().0 + 1);
+        self.board.drain(0..idx_to_elide);
+        self.elided_height += idx_to_elide as u64;
     }
 
     // Returns true if falling stopped.
@@ -135,7 +169,7 @@ impl<'input> Board<'input> {
         }
     }
 
-    fn start_new_shape(&mut self, counter: u32) {
+    fn start_new_shape(&mut self, counter: u64) {
         // Find the first empty row, make sure there are three empty lines above it.
         let first_empty = self.board.iter().find_position(|line| line.iter().all(|c| c == &'.'));
         let first_empty = if first_empty.is_some() { first_empty.unwrap().0 } else { 0 };
@@ -187,7 +221,8 @@ impl<'input> Board<'input> {
 impl fmt::Display for Board<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let res = self.board.iter().rev().map(|arr| arr.iter().collect::<String>()).join("\n");
-        write!(f, "{}", res)
+        let elision_msg = if self.elided_height > 0 { format!["\n[and {} rows removed]", self.elided_height] } else { "".to_string() };
+        write!(f, "{}{}", res, elision_msg)
     }
 }
 
@@ -199,13 +234,27 @@ fn main() {
     // Parse input
 
     // Part 1
+    println!("--- PART 1 --- \n\n");
     let mut board = Board::new(&input);
-    let height = board.simulate();
+    let height = board.simulate(2022);
 
+    println!["{board}"];
     println!("The tower is {height} high");
-    // print!["{board}"];
 
     // Part 2
+    println!("\n--- PART 2 ---\n\n");
+    let mut board = Board::new(&input);
+
+    let height = board.simulate(1_000_000_000/*_000*/);
+
+    println!["{board}"];
+    println!("The tower is {height} high");
+
+    // For sample, expecting 1_514_285_714_288
+    // I simulated with 1 billion (instead of 1 trillion). It took a *very* long time. 
+    // It also gave me       1_514_285_720
+    // Suspicious! There must be something mathy happening here. In fact,
+    // I bet I could get much better performance by bitmasking instead of using characters.
 }
 
 
@@ -354,5 +403,61 @@ mod tests {
         ];
         assert_eq!(pen, false);
         assert_eq!(res, true);
+    }
+
+    #[test]
+    fn elision() {
+        let mut board = Board::new("");
+
+        // Drop two horizontal bars. The lower one should get elided.
+        board.start_new_shape(0);
+        for _ in 0..4 {
+            board.push('<');
+            board.fall();
+        }
+        board.start_new_shape(0);
+        for _ in 0..4 {
+            board.push('>');
+            board.fall();
+        }
+        assert_eq![board.to_string(),
+            [ ".......",
+              ".......",
+              ".......",
+              "...####",
+              "####..."
+            ].join("\n")
+        ];
+        board.elide();
+        assert_eq![board.to_string(),
+            [ ".......",
+              ".......",
+              ".......",
+              "...####",
+              "[and 1 rows removed]"
+            ].join("\n")
+        ];
+        assert_eq![board.elided_height, 1];
+    }
+
+    #[test]
+    fn no_elision() {
+        let mut board = Board::new("");
+
+        // Drop two horizontal bars. The lower one should get elided.
+        board.start_new_shape(0);
+        for _ in 0..4 {
+            board.push('<');
+            board.fall();
+        }
+        board.elide();
+        assert_eq![board.to_string(),
+            [ ".......",
+              ".......",
+              ".......",
+              "####..."
+            ].join("\n")
+        ];
+        assert_eq![board.elided_height, 0];
     }
 }
