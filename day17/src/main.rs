@@ -44,7 +44,8 @@ impl<'input> Board<'input> {
 
                 // println!("\n{}", self);
                 if count % 10_000_000 == 0 {
-                    println!("At {}, elided height is {}, time {}s", count, self.elided_height, start.elapsed().as_secs());
+                    let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|&&row| row > 0).unwrap().0 as u64;
+                    println!("At {}, height is {} ({} elided), time {}s", count, highest + self.elided_height, self.elided_height, start.elapsed().as_secs());
                 }
             }
         }
@@ -81,18 +82,10 @@ impl<'input> Board<'input> {
 
     // Returns true if falling stopped.
     fn fall(&mut self) -> bool {
-        // If we're at the bottom, freeze it where it is.
-        if self.shape_idx == 0 {
-            // Lock the shape into the board.
-            for i in 0..self.shape_fall.len() {
-                self.board[i] |= self.shape_fall[i];
-            }
-            self.shape_fall.clear();
-            return true;
-        }
-
-        // If the shape falling would collide with anything, freeze it where it is.
-        if self.board.iter().skip(self.shape_idx - 1).zip(self.shape_fall.iter()).any(|(b, s)| b & s > 0) {
+        // If the shape falling would collide with anything, including the bottom, freeze it where it is.
+        if self.shape_idx == 0 ||
+           self.board.iter().skip(self.shape_idx - 1).zip(self.shape_fall.iter()).any(|(b, s)| b & s > 0)
+        {
             // Lock the shape into the board.
             for i in 0..self.shape_fall.len() {
                 self.board[i + self.shape_idx] |= self.shape_fall[i];
@@ -263,10 +256,17 @@ fn main() {
     println!("The tower is {height} high");
 
     // For sample, expecting 1_514_285_714_288
+
     // I simulated with 1 billion (instead of 1 trillion). It took a *very* long time. 
     // It also gave me       1_514_285_720
     // Suspicious! There must be something mathy happening here. In fact,
     // I bet I could get much better performance by bitmasking instead of using characters.
+    
+    // On input...
+    // 100_000_000 gave me     154_080_459
+    // 500_000_000 gave me     770_402_288
+    // 1_000_000_000  ->     1_540_804_578
+
 }
 
 
