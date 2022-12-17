@@ -1,5 +1,6 @@
 use std::{fmt, process::id};
 use itertools::Itertools;
+use std::time::{Instant};
 
 struct Board<'input> {
     board: Vec<u8>,
@@ -26,6 +27,8 @@ impl<'input> Board<'input> {
         let mut count = 0u64;
         let mut jetiter = self.jets.chars().cycle();
 
+        let start = Instant::now();
+
         self.start_new_shape(count);
 
         while count < cycles {
@@ -41,7 +44,7 @@ impl<'input> Board<'input> {
 
                 // println!("\n{}", self);
                 if count % 10_000_000 == 0 {
-                    println!("At {}, elided height is {}", count, self.elided_height);
+                    println!("At {}, elided height is {}, time {}s", count, self.elided_height, start.elapsed().as_secs());
                 }
             }
         }
@@ -49,6 +52,7 @@ impl<'input> Board<'input> {
         // Find the highest row that has a '#' (i.e. is >0)
         let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|&&row| row > 0).unwrap().0 as u64;
         println!("Highest is {highest}, board length is {}", self.board.len());
+        println!("Completed in {}s", start.elapsed().as_secs());
         return highest + self.elided_height;
     }
 
@@ -246,16 +250,16 @@ fn main() {
     let mut board = Board::new(&input);
     let height = board.simulate(2022);
 
-    println!["{board}"];
+    // println!["{board}"];
     println!("The tower is {height} high");
 
     // Part 2
     println!("\n--- PART 2 ---\n\n");
     let mut board = Board::new(&input);
 
-    let height = board.simulate(1_000_000_000/*_000*/);
+    let height = board.simulate(1_000_000_000_000);
 
-    println!["{board}"];
+    // println!["{board}"];
     println!("The tower is {height} high");
 
     // For sample, expecting 1_514_285_714_288
