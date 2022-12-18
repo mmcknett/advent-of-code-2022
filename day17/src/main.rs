@@ -45,7 +45,14 @@ impl<'input> Board<'input> {
                 count += 1;
                 self.start_new_shape(count);
 
-                if (count & (count-1) == 0) {
+                fn power_of(mut num: u64, base: u64) -> bool {
+                    while num >= base && num % base == 0 {
+                        num /= base;
+                    }
+                    return num == 1;
+                }
+
+                if power_of(count, 16) {
                     let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|&&row| row > 0).unwrap().0 as u64;
                     println!("At {}, height is {} ({} elided), time {}s", count, highest + self.elided_height, self.elided_height, start.elapsed().as_secs());
                 }
@@ -283,7 +290,7 @@ fn main() {
     println!("\n--- PART 2 ---\n\n");
     let mut board = Board::new(&input);
 
-    let height = board.simulate(100_000);
+    let height = board.simulate(1_000_000_000_000);
 
     // println!["{board}"];
     println!("The tower is {height} high");
