@@ -51,20 +51,22 @@ fn main() {
 
         println!("Part 2 -- Total surface: {part2_sides}, remaining coords: {}", part2_drops.len());
     }
-
+    // After fixing a problem w/ containing_volume expanding larger for every new coordinate, tried...
+    // 2488 <-- too high
+    // 2482 is also too high (one of the intermediate results)
 }
 
 fn containing_volume(coords: &HashSet<Coord>) -> (Coord, Coord) {
     let mut min: Coord = coords.iter().next().unwrap().clone();
     let mut max: Coord = min.clone();
     for c in coords {
-        min.x = std::cmp::min(min.x, c.x) - 1;
-        min.y = std::cmp::min(min.y, c.y) - 1;
-        min.z = std::cmp::min(min.z, c.z) - 1;
+        min.x = std::cmp::min(min.x, c.x - 5);
+        min.y = std::cmp::min(min.y, c.y - 5);
+        min.z = std::cmp::min(min.z, c.z - 5);
 
-        max.x = std::cmp::max(max.x, c.x) + 1;
-        max.y = std::cmp::max(max.y, c.y) + 1;
-        max.z = std::cmp::max(max.z, c.z) + 1;
+        max.x = std::cmp::max(max.x, c.x + 5);
+        max.y = std::cmp::max(max.y, c.y + 5);
+        max.z = std::cmp::max(max.z, c.z + 5);
     }
 
     return (min, max);
@@ -203,7 +205,7 @@ mod tests {
 
     #[test]
     fn air() {
-        let mut set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1)]);
+        let set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1)]);
         assert_eq!(
             fill_volume((Coord::new(0,0,0), Coord::new(3,2,2)), &set),
             HashSet::from([
