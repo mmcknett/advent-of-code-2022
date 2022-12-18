@@ -1,3 +1,5 @@
+use core::ops::Add;
+
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub struct Coord {
     pub x: i32,
@@ -23,6 +25,18 @@ impl Coord {
       let (x, y) = coord;
       Coord::new2(x, y)
     }
+}
+
+impl Add for Coord {
+  type Output = Self;
+
+  fn add(self, other: Self) -> Self {
+      Self {
+          x: self.x + other.x,
+          y: self.y + other.y,
+          z: self.z + other.z,
+      }
+  }
 }
 
 #[derive(Eq, PartialEq, Hash, Debug)]
