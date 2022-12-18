@@ -21,7 +21,7 @@ fn main() {
     let mut sides = 0;
     let mut part1_drops = drops.clone();
     while !part1_drops.is_empty() {
-        sides += sides_starting_at_first(&mut part1_drops, None).0;
+        sides += sides_starting_at_first(&mut part1_drops, false).0;
     }
     println!("Part 1 -- Total surface: {sides}, remaining coords: {}", part1_drops.len());
 
@@ -39,13 +39,7 @@ fn main() {
     let mut part2_drops = drops.clone();
     let mut part2_sides = 0;
     while !part2_drops.is_empty() {
-        let mut p2_drops_copy = part2_drops.clone();
-        let (_, drop) = sides_starting_at_first(&mut part2_drops, None);
-
-        let minmax = containing_volume(&drop);
-        let air_around_drop = fill_volume(minmax, &drop);
-
-        let (sides, _) = sides_starting_at_first(&mut p2_drops_copy, Some(&air_around_drop));
+        let (sides, _) = sides_starting_at_first(&mut part2_drops, true);
 
         part2_sides += sides;
 
@@ -54,19 +48,26 @@ fn main() {
     // After fixing a problem w/ containing_volume expanding larger for every new coordinate, tried...
     // 2488 <-- too high
     // 2482 is also too high (one of the intermediate results)
+    // 1882 <-- too low. Tried *inverting* the condition I used for inside/outside the shape instead,
+    //   but that wasn't the problem.
+
+    // 2458 (the *first* intermediate result) is the right answer,
+    // but it isn't clear to me why this solution is double-counting.
+    // TODO: Inspect the 5 coordinates that are remaining after the first sides-calculation, and see why
+    //       they are leading to a double-count.
 }
 
 fn containing_volume(coords: &HashSet<Coord>) -> (Coord, Coord) {
     let mut min: Coord = coords.iter().next().unwrap().clone();
     let mut max: Coord = min.clone();
     for c in coords {
-        min.x = std::cmp::min(min.x, c.x - 5);
-        min.y = std::cmp::min(min.y, c.y - 5);
-        min.z = std::cmp::min(min.z, c.z - 5);
+        min.x = std::cmp::min(min.x, c.x - 1);
+        min.y = std::cmp::min(min.y, c.y - 1);
+        min.z = std::cmp::min(min.z, c.z - 1);
 
-        max.x = std::cmp::max(max.x, c.x + 5);
-        max.y = std::cmp::max(max.y, c.y + 5);
-        max.z = std::cmp::max(max.z, c.z + 5);
+        max.x = std::cmp::max(max.x, c.x + 1);
+        max.y = std::cmp::max(max.y, c.y + 1);
+        max.z = std::cmp::max(max.z, c.z + 1);
     }
 
     return (min, max);
@@ -74,9 +75,9 @@ fn containing_volume(coords: &HashSet<Coord>) -> (Coord, Coord) {
 
 // Find any path out of the bounds of the drops. Returns true if a path exists and false if not.
 // Either way, returns the set of visited coordinates, which will all be either in or out of the drops.
-fn can_dfs_out(coord: Coord, drops: &HashSet<Coord>) -> (bool, HashSet<Coord>) {
+fn can_dfs_out(coord: Coord, drops: &HashSet<Coord>) -> (bool, Vec<Coord>) {
     let (min, max) = containing_volume(drops);
-    let mut visited = HashSet::from([coord]);
+    let mut visited = vec![];
 
     let dirs = [
         Coord::new(1,0,0),  // Right
@@ -90,6 +91,7 @@ fn can_dfs_out(coord: Coord, drops: &HashSet<Coord>) -> (bool, HashSet<Coord>) {
     let mut stack = vec![coord];
     while !stack.is_empty() {
         let curr = stack.pop().unwrap();
+        visited.push(curr);
     
         for d in dirs {
             let next = curr + d;
@@ -100,11 +102,11 @@ fn can_dfs_out(coord: Coord, drops: &HashSet<Coord>) -> (bool, HashSet<Coord>) {
                next.z < min.z || next.z > max.z
             {
                 // Found a way out!
+                visited.push(next);
                 return (true, visited);
             }
 
             stack.push(next);
-            visited.insert(next);
         }
     }
 
@@ -146,7 +148,7 @@ fn fill_volume((min, max): (Coord, Coord), drops: &HashSet<Coord>) -> HashSet<Co
     return air;
 }
 
-fn sides_starting_at_first(coords: &mut HashSet<Coord>, air: Option<&HashSet<Coord>>) -> (u32, HashSet<Coord>) {
+fn sides_starting_at_first(coords: &mut HashSet<Coord>, dfs_holes: bool) -> (u32, HashSet<Coord>) {
     if coords.is_empty() {
         panic!("Don't give me an empty set.");
     }
@@ -197,14 +199,14 @@ fn sides_starting_at_first(coords: &mut HashSet<Coord>, air: Option<&HashSet<Coo
                 q.push_front(next);
                 to_remove.insert(next); // Current can be removed from the set.
             } else  {
-                // Ignore empty sides that are *not* contained in the surrounding air.
-                if let Some(a) = air {
-                    if !a.contains(&next) {
-                        continue;
+                result += 1;
+
+                if dfs_holes {
+                    let (exitable, _) = can_dfs_out(next, coords);
+                    if !exitable {
+                        result -= 1; // Found an empty side that was interior. Don't count it.
                     }
                 }
-
-                result += 1; // Found an empty side that was in the surrounding air.
             }
         }
 
@@ -236,7 +238,7 @@ mod tests {
     fn day_18_test() {
         let mut set = HashSet::from([Coord::new(1,1,1), Coord::new(2,1,1)]);
         assert_eq!(
-            sides_starting_at_first(&mut set, None),
+            sides_starting_at_first(&mut set, false),
             (10, HashSet::from([Coord::new(1,1,1), Coord::new(2,1,1)]))
         );
         assert_eq!(set, HashSet::new());
@@ -289,12 +291,70 @@ mod tests {
     #[test]
     fn dfs_out() {
         let set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1)]);
-        assert_eq![can_dfs_out(Coord::new(0,1,1), &set), (true, HashSet::from([Coord::new(0,1,1)]))];
+        assert_eq![can_dfs_out(Coord::new(0,1,1), &set), (true, vec![Coord::new(0,1,1), Coord::new(-1,1,1)])];
     }
 
     #[test]
     fn dfs_out_complex() {
         let set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1), Coord::new(1,2,1)]);
-        assert_eq![can_dfs_out(Coord::new(2,2,1), &set), (true, HashSet::from([Coord::new(0,1,1)]))];
+        assert_eq![can_dfs_out(Coord::new(2,2,1), &set), (true, vec![Coord::new(2,2,1), Coord::new(2,2,0), Coord::new(2,2,-1)])];
+    }
+
+    #[test]
+    fn cant_dfs_out_from_hole() {
+        // Hole @ 1,1,1
+        let set = HashSet::from_iter([
+            Coord::new(0,1,1),
+            Coord::new(2,1,1),
+            Coord::new(1,0,1),
+            Coord::new(1,2,1),
+            Coord::new(1,1,2),
+            Coord::new(1,1,0)
+        ]);
+        assert_eq![
+            can_dfs_out(Coord::new(1,1,1), &set),
+            (false, vec![Coord::new(1,1,1)])
+        ];
+    }
+
+    #[test]
+    fn cant_dfs_out_from_larger_hole() {
+        // Hole @ 1,1,1
+        let set = HashSet::from_iter([
+            Coord::new(0,1,1),
+            Coord::new(3,1,1),
+            Coord::new(1,0,1),
+            Coord::new(1,2,1),
+            Coord::new(2,0,1),
+            Coord::new(2,2,1),
+            Coord::new(1,1,2),
+            Coord::new(1,1,0),
+            Coord::new(2,1,2),
+            Coord::new(2,1,0)
+        ]);
+        assert_eq![
+            can_dfs_out(Coord::new(1,1,1), &set),
+            (false, vec![Coord::new(1,1,1), Coord::new(2,1,1)])
+        ];
+    }
+
+    #[test]
+    fn dfs_out_from_larger_hole_top_missing() {
+        // Hole @ 1,1,1
+        let set = HashSet::from_iter([
+            Coord::new(0,1,1),
+            Coord::new(3,1,1),
+            Coord::new(1,0,1),
+            Coord::new(1,2,1),
+            Coord::new(2,0,1),
+            Coord::new(2,2,1),
+            Coord::new(1,1,2),
+            Coord::new(1,1,0),
+            Coord::new(2,1,0)
+        ]);
+        assert_eq![
+            can_dfs_out(Coord::new(1,1,1), &set),
+            (true, vec![Coord::new(1,1,1), Coord::new(2,1,1), Coord::new(2,1,2), Coord::new(2,1,3), Coord::new(2,1,4)])
+        ];
     }
 }
