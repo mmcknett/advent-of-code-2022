@@ -10,6 +10,7 @@
       "name": "Sample input day18",
       "cargo": {
         "args": [
+          "+nightly",
           "build",
           "--bin=day18",
           "--package=day18"
@@ -28,6 +29,7 @@
       "name": "Puzzle input day18",
       "cargo": {
         "args": [
+          "+nightly",
           "build",
           "--bin=day18",
           "--package=day18"
@@ -46,6 +48,7 @@
       "name": "Debug unit tests in executable 'day18'",
       "cargo": {
         "args": [
+          "+nightly",
           "test",
           "--no-run",
           "--bin=day18",
