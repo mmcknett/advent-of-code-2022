@@ -8,7 +8,7 @@ fn main() {
 
     // Parse input
     let parser = RangePairParser::new();
-    let assign_pairs: Vec<(Range, Range)> = input.split("\n").into_iter().map(|s| parser.parse(s).unwrap()).collect();
+    let assign_pairs: Vec<(Range<u32>, Range<u32>)> = input.split("\n").into_iter().map(|s| parser.parse(s).unwrap()).collect();
 
     // Part 1
     let fully_contained_sum: u32 = assign_pairs.iter().map(
