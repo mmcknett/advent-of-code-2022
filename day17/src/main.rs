@@ -1,4 +1,4 @@
-use std::{fmt, process::id};
+use std::fmt;
 use itertools::Itertools;
 use std::time::{Instant};
 
@@ -45,8 +45,7 @@ impl<'input> Board<'input> {
                 count += 1;
                 self.start_new_shape(count);
 
-                // println!("\n{}", self);
-                if count % 10_000_000 == 0 {
+                if (count & (count-1) == 0) {
                     let highest = self.board.len() as u64 - self.board.iter().rev().find_position(|&&row| row > 0).unwrap().0 as u64;
                     println!("At {}, height is {} ({} elided), time {}s", count, highest + self.elided_height, self.elided_height, start.elapsed().as_secs());
                 }
@@ -284,7 +283,7 @@ fn main() {
     println!("\n--- PART 2 ---\n\n");
     let mut board = Board::new(&input);
 
-    let height = board.simulate(1_000_000_000_000);
+    let height = board.simulate(100_000);
 
     // println!["{board}"];
     println!("The tower is {height} high");
@@ -298,9 +297,16 @@ fn main() {
     // I bet I could get much better performance by bitmasking instead of using characters.
     
     // On input...
-    // 100_000_000 gave me     154_080_459
-    // 500_000_000 gave me     770_402_288
-    // 1_000_000_000  ->     1_540_804_578
+    // 1_000 ->                        1_525
+    // 10_000 ->                      15_403
+    // 100_000 ->                    154_050
+    // 500_000 ->                    770_375
+    // 1_000_000 ->                1_540_796
+    // 10_000_000 ->              15_408_043
+    // 50_000_000 ->              77_040_215
+    // 100_000_000 gave me       154_080_459
+    // 500_000_000 gave me       770_402_288
+    // 1_000_000_000  ->       1_540_804_578
 
 }
 
