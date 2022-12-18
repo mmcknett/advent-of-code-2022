@@ -10,3 +10,6 @@ path = "../utils"
 
 [dependencies]
 itertools = "*"
+
+[profile.release]
+debug = 1

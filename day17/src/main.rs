@@ -35,9 +35,12 @@ impl<'input> Board<'input> {
             self.push(jetiter.next().unwrap());
             let stopped = self.fall();
             if stopped {
-                // Find the highest location where two rows cut off any access below them.
-                // Elide the board by removing lower row and cache the elided height at that point.
-                self.elide();
+                if self.board.len() > 35 {
+                    // When the board gets too long...
+                    // Find the highest location where two rows cut off any access below them.
+                    // Elide the board by removing lower row and cache the elided height at that point.
+                    self.elide();
+                }
 
                 count += 1;
                 self.start_new_shape(count);
@@ -83,8 +86,22 @@ impl<'input> Board<'input> {
     // Returns true if falling stopped.
     fn fall(&mut self) -> bool {
         // If the shape falling would collide with anything, including the bottom, freeze it where it is.
-        if self.shape_idx == 0 ||
-           self.board.iter().skip(self.shape_idx - 1).zip(self.shape_fall.iter()).any(|(b, s)| b & s > 0)
+        let mut collides = self.shape_idx == 0;
+
+        if !collides {
+            // Check collision with shapes below
+            for i in 0..self.shape_fall.len() {
+                let below_idx = self.shape_idx - 1;
+                let b = self.board[below_idx + i];
+                let s = self.shape_fall[i];
+                if b & s > 0 {
+                    collides = true;
+                    break;
+                }
+            }
+        }
+
+        if collides
         {
             // Lock the shape into the board.
             for i in 0..self.shape_fall.len() {
@@ -101,32 +118,49 @@ impl<'input> Board<'input> {
     fn push(&mut self, dir: char) {
         // Skip pushing if any part of the shape would hit a wall
         // (i.e. a 1 is on the left or right for any line of the shape, depending on direction.)
-        let wall_collide = match dir {
-            '<' => self.shape_fall.iter().any(|&bits| bits & 0b100_0000 > 0),
-            '>' => self.shape_fall.iter().any(|&bits| bits & 0b000_0001 > 0),
-            _ => panic!("Impossible!")
+
+        // IDEA: automatically skip repeats if you are against a wall and know you're at the top.
+
+        let wall_adjacent = match dir {
+            '<' => 0b100_0000,
+            '>' => 0b000_0001,
+            _ => panic!("Impossible")
         };
-        if wall_collide {
-            return;
+
+        for i in 0..self.shape_fall.len() {
+            if self.shape_fall[i] & wall_adjacent > 0 {
+                // Some part of shape will collide with the wall
+                return;
+            }
         }
 
-        // Move the shape in the direction to check for board collisions.
-        let moved: Vec<u8> = self.shape_fall.iter()
-            .map(
-                |&bits|
-                    match dir {
-                        '<' => bits << 1,
-                        '>' => bits >> 1,
-                        _ => panic!("Impossible!")
-                    }
-            ).collect();
+        for i in 0..self.shape_fall.len() {
+            self.shape_fall[i] = match dir {
+                '<' => self.shape_fall[i] << 1,
+                '>' => self.shape_fall[i] >> 1,
+                _ => panic!("Impossible!")
+            };
+        }
 
-        let collision = self.board.iter().skip(self.shape_idx).zip(moved.iter()).any(
-            |(&b, &m)| b & m > 0
-        );
+        let mut collision = false;
+        for i in 0..self.shape_fall.len() {
+            let b = self.board[self.shape_idx + i];
+            let m = self.shape_fall[i];
+            if b & m > 0 {
+                collision = true;
+                break;
+            }
+        }
 
-        if !collision {
-            self.shape_fall = moved;
+        if collision {
+            // Undo the shift if it collided
+            for i in 0..self.shape_fall.len() {
+                self.shape_fall[i] = match dir {
+                    '<' => self.shape_fall[i] >> 1,
+                    '>' => self.shape_fall[i] << 1,
+                    _ => panic!("Impossible!")
+                };
+            }
         }
     }
 
@@ -137,7 +171,7 @@ impl<'input> Board<'input> {
         let lines_to_add: i32 = 3 - (self.board.len() - first_empty) as i32;
         if lines_to_add < 0 {
             for _ in lines_to_add..0 {
-                self.board.pop();
+                self.board.pop(); // IDEA: instead of popping, start shape_idx at the appropriate place.
             }
         } else {
             for _ in 0..lines_to_add {
@@ -259,6 +293,7 @@ fn main() {
 
     // I simulated with 1 billion (instead of 1 trillion). It took a *very* long time. 
     // It also gave me       1_514_285_720
+    // On a million:         1_514_288
     // Suspicious! There must be something mathy happening here. In fact,
     // I bet I could get much better performance by bitmasking instead of using characters.
     
