@@ -72,6 +72,45 @@ fn containing_volume(coords: &HashSet<Coord>) -> (Coord, Coord) {
     return (min, max);
 }
 
+// Find any path out of the bounds of the drops. Returns true if a path exists and false if not.
+// Either way, returns the set of visited coordinates, which will all be either in or out of the drops.
+fn can_dfs_out(coord: Coord, drops: &HashSet<Coord>) -> (bool, HashSet<Coord>) {
+    let (min, max) = containing_volume(drops);
+    let mut visited = HashSet::from([coord]);
+
+    let dirs = [
+        Coord::new(1,0,0),  // Right
+        Coord::new(-1,0,0), // Left
+        Coord::new(0,1,0), // Forward
+        Coord::new(0,-1,0), // Back
+        Coord::new(0,0,1),  // Up
+        Coord::new(0,0,-1),  // Down
+    ];
+
+    let mut stack = vec![coord];
+    while !stack.is_empty() {
+        let curr = stack.pop().unwrap();
+    
+        for d in dirs {
+            let next = curr + d;
+            if visited.contains(&next) || drops.contains(&next) { continue; }
+
+            if next.x < min.x || next.x > max.x ||
+               next.y < min.y || next.y > max.y ||
+               next.z < min.z || next.z > max.z
+            {
+                // Found a way out!
+                return (true, visited);
+            }
+
+            stack.push(next);
+            visited.insert(next);
+        }
+    }
+
+    return (false, visited);
+}
+
 fn fill_volume((min, max): (Coord, Coord), drops: &HashSet<Coord>) -> HashSet<Coord> {
     let dirs: [Coord; 6] = [
         Coord::new(1,0,0),  // Right
@@ -245,5 +284,17 @@ mod tests {
                 Coord { x: 2, y: 2, z: 0 }
             ])
         );
+    }
+
+    #[test]
+    fn dfs_out() {
+        let set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1)]);
+        assert_eq![can_dfs_out(Coord::new(0,1,1), &set), (true, HashSet::from([Coord::new(0,1,1)]))];
+    }
+
+    #[test]
+    fn dfs_out_complex() {
+        let set = HashSet::from_iter([Coord::new(1,1,1), Coord::new(2,1,1), Coord::new(1,2,1)]);
+        assert_eq![can_dfs_out(Coord::new(2,2,1), &set), (true, HashSet::from([Coord::new(0,1,1)]))];
     }
 }
