@@ -2,18 +2,68 @@
 use core::time;
 use std::{collections::{HashMap, HashSet}, hash::Hash};
 
-type Tunnels = HashMap<Valve, Vec<Valve>>;
+type Tunnels<'a> = HashMap<Valve<'a>, Vec<Valve<'a>>>;
+type Release = u32;
+type Distance = u32;
+type Graph<'a> = HashSet<Valve<'a>>;
 
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-struct Valve {
-    val: [char; 2]
+// fn valve<'a>(vvd: &'a ValveValDist) -> &'a Valve { &vvd.0 }
+// fn release_rate<'a>(vvd: &'a ValveValDist) -> &'a Release { &vvd.1 }
+
+// fn valve<'a>(vvd: &'a ValveValDist) -> &'a Valve { &vvd.0 }
+// fn release_rate<'a>(vvd: &'a ValveValDist) -> &'a Release { &vvd.1 }
+// fn distance_to<'a>(vvd: &'a ValveValDist) -> &'a Release { &vvd.2 }
+
+#[derive(Debug, Clone)]
+struct Valve<'a> {
+    id: [char; 2],
+    release: u32,
+    connections: HashMap<&'a Valve<'a>, Distance>
 }
 
-impl Valve {
-    fn from(s: &str) -> Self {
+impl<'a> std::cmp::PartialOrd for Valve<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> std::cmp::Ord for Valve<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl<'a> std::cmp::PartialEq<Valve<'a>> for Valve<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl<'a> std::cmp::Eq for Valve<'a> {}
+
+impl<'a> std::hash::Hash for Valve<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl<'a> Valve<'a> {
+    fn from(s: &str, release: Release) -> Self {
         let mut iter = s.chars();
         Self {
-            val: [iter.next().unwrap(), iter.next().unwrap()]
+            id: [iter.next().unwrap(), iter.next().unwrap()],
+            release,
+            connections: HashMap::new()
+        }
+    }
+
+    fn connect_to(&mut self, other: &'a Valve) {
+        self.connections.insert(other, 0);
+    }
+
+    fn calculate_distances(&mut self) {
+        for dest in self.connections() {
+            
         }
     }
 }
@@ -33,6 +83,15 @@ fn main() {
         .map(
             |ins| (Valve::from(&ins.0), ins.2.split(", ").map(|s| Valve::from(s)).collect())
         ).collect();
+
+    let graph: Graph = instructions.iter()
+        .map(
+            |ins| {
+                let valve = Valve::from(&ins.0);
+                let release_rate = &ins.1;
+
+            }
+        )
 
     // Part 1
     // Make a list of all of the valves that aren't 0-flow-rate.
@@ -113,6 +172,24 @@ fn find_max_release(
     // println!("From {curr} with {time_remain} remaining, max was {result}");
     param_cache.insert(params, result);
     return result;
+}
+
+fn time_to_reach(start: &Valve, dest: &Valve, tunnels: &Tunnels, visited: &mut HashSet<Valve>) -> u32 {
+    if visited.contains(start) {
+        return u32::MAX;
+    }
+
+    if start == dest {
+        return 0;
+    }
+
+    visited.insert(start.clone());
+    return tunnels.get(start).expect("Valve not found?").iter()
+        .map(
+            |next_valve| time_to_reach(next_valve, dest, tunnels, visited)
+        ).min().unwrap()
+        .checked_add(1)
+        .or(Some(u32::MAX)).unwrap();
 }
 
 #[cfg(test)]
