@@ -5,6 +5,45 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 19
+[Day 19 prompt](https://adventofcode.com/2022/day/19)
+
+(We were preparing for our two-week international trip, so I didn't have time to immediately finish this one.) I started with a naive, aggressively-exponential algorithm started for part 1. Same issue as day 16; caching params (with the `cached` library!) isn't sufficient to shortcut the processing. This one seems suited to dynamic programming, but I don't know exactly what intermediate values to build up yet.
+
+TODO: Finish part 1 & 2 writeup
+
+## Day 18
+[Day 18 prompt](https://adventofcode.com/2022/day/18)
+
+Voxels! For part 1, I used a BFS algorithm to search each voxel that was part of a "droplet" and count the number of neighbors it was *missing* to find its surface count. For part 2, I tried filling a volume of air around the droplet and then skipping any voxel that *would* have counted as an outside surface if that voxel wasn't in the air volume.
+
+That would have worked fine, but I had a bug in my min/max algorithm to find the bounds of the air volume that gave me a voxel cube of 5000 on a side! I assumed that was the real size, but it was actually much smaller than that (maybe 50 to a side?), so I spent time trying to figure out an efficient way of determining if an "air" voxel was trapped using a DFS-out method. Implementing that was when I found the problem with the min/max algorithm.
+
+### Lessons learned:
+- Double check that the problem is *really* as big as you think it is. Don't add 1 to max as you accumulate it to find max. :eyeroll:
+- Lean more on tests for "trivial"-seeming functions–they'll be easy to write and
+
+## Day 17
+[Day 17 prompt](https://adventofcode.com/2022/day/17)
+
+I built a solution that does the whole "tetris" simulation, and that ended up taking hours to run (after I did some small perf tweaks) for part 2.
+
+TODO: Make it run in less than 39 hours.
+
+There are signs that this problem is just some math operation, under the covers. You could think of the tetris board as a long string of base-128 digits (or base-256 if u8s are easier to work with), and each drop is a comparison with some 1-4 digits (each one times 2 or divided by 2, depending on what direction they're "pushed"). But I haven't figured out yet how to model the "push and drop" operation as a math expression.
+
+## Day 16
+[Day 16 prompt](https://adventofcode.com/2022/day/16)
+
+I wrote a recursive `find_max_release` search algorithm that ended up being exponential run-time. Caching parameters isn't a good enough strategy for this one; the intermediate results are too diverse. I let part 1 run overnight (<8 hours I suppose) and it produced a result, but I haven't gotten time to optimize part 1 and then finish part 2.
+
+TODO: Write up part 2 when finished
+
+## Day 15
+[Day 15 prompt](https://adventofcode.com/2022/day/15)
+
+Part 1 was a really good setup to part 2 for this one. I used my `Range` struct from `utils` and modified it to add some features for this problem, including making it generic. It probably wasn’t worth the effort, but I did learn more about Rust generics by taking it on, so it had some benefits.
+
 ## Day 14
 [Day 14 prompt](https://adventofcode.com/2022/day/14)
 
