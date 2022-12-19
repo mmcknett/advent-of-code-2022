@@ -10,3 +10,4 @@ path = "../utils"
 
 [dependencies]
 scan_fmt = "*"
+cached = "*"
