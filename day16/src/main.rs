@@ -88,6 +88,8 @@ fn main() {
     let start: Valve = Valve::from_id("AA");
     let minutes_remain: u32 = 30;
 
+    println!("Positive valves: {:?}", positive_valves);
+
     let (pressure_released, walk) = find_max_release(&start, &distances, positive_valves, 0 /* curr_flow */, minutes_remain);
 
     println!("Max pressure release is: {pressure_released}");
@@ -124,7 +126,7 @@ fn find_max_release(
 
     if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
-        let result = time_remain * curr_flow;
+        let result = this_valve_release + time_remain * curr_flow;
         return (result, vec![]);
     }
 
