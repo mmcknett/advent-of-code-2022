@@ -1,14 +1,15 @@
 #[macro_use] extern crate scan_fmt;
 use core::time;
-use std::{collections::{HashMap, HashSet}, hash::Hash};
+use std::{collections::{HashMap, HashSet, VecDeque}, hash::Hash, fmt::Debug};
 
-type Tunnels<'a> = HashMap<Valve, Vec<Valve>>;
+type Graph = HashMap<Valve, Vec<Valve>>;
 type Release = u16;
 type Distance = u32;
-type Graph = HashMap<Valve, Vec<(Valve, Distance)>>;
+type Distances = HashMap<Valve, Distance>;
+type DistMatrix = HashMap<Valve, Distances>;
 type VisitList = HashSet<Valve>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Valve {
     id: [char; 2],
     release: Release
@@ -54,6 +55,11 @@ impl Valve {
     }
 }
 
+impl Debug for Valve {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} ({})", self.id, self.release)
+    }
+}
 
 fn main() {
     // Read in the file provided as the first argument.
@@ -66,117 +72,128 @@ fn main() {
         .map(|line| scan_fmt![line, "Valve {} has flow rate={d}; {*/tunnels lead|tunnel leads/} to valve{*/s?/} {/.*/}", String, Release, String].unwrap())
         .collect();
 
-    let mut tunnels: Tunnels = instructions.iter()
+    let valves: VisitList = instructions.iter().map(|ins| Valve::from(&ins.0, ins.1)).collect();
+    let tunnels: Graph = instructions.iter()
         .map(
             |ins| (Valve::from_id(&ins.0), ins.2.split(", ").map(|s| Valve::from_id(s)).collect())
         ).collect();
 
-    let graph: Graph = instructions.iter()
-        .map(
-            |ins| {
-                let valve = Valve::from(&ins.0);
-                let release_rate = &ins.1;
-
-            }
-        )
+    let distances = all_distances(&tunnels, &valves);
 
     // Part 1
     // Make a list of all of the valves that aren't 0-flow-rate.
     // Starting at AA, find the next-maximal valve to go turn on, accounting for time to walk there and turn it on.
     // Keep finding the next-maximal valve.
-    let positive_valves: VisitList = instructions.iter().filter_map(
-        |ins|
-            if ins.1 > 0 { Some(Valve::from(&ins.0, ins.1)) } else { None }
-        ).collect();
+    let positive_valves: VisitList = valves.iter().filter(|&v| v.release > 0).cloned().collect();
     let start: Valve = Valve::from_id("AA");
     let minutes_remain: u32 = 30;
 
-    let pressure_released = find_max_release(&start, &tunnels, &positive_valves, minutes_remain, 0 /* current_release */, &mut HashMap::new());
+    let (pressure_released, walk) = find_max_release(&start, &distances, positive_valves, 0 /* curr_flow */, minutes_remain);
 
     println!("Max pressure release is: {pressure_released}");
-    // Tried 1021, but that's too low. <-- fixed the algorithm
-    // Tried 1070, but also too low. <-- Greedy algorithm probably isn't good enough. (For sample, it picks `JJ` first instead of `DD`.)
+    println!("Walked... {:?}", walk);
+
+    // This new implementation finishes quickly.
+    // However, it only produces the correct output for the *puzzle* input, not the *sample* input.
+    // Something's still wrong. The valves it's opening are D -> J -> B -> C -> E -> H
+    // It should be opening D -> B -> J -> H -> E -> C
 
     // Part 2
 }
 
 fn find_max_release(
     curr: &Valve,
-    tunnels: &Tunnels,
-    positive_valves: &HashMap<Valve, u32>,
-    time_remain: u32,
-    current_release: u32,
-    mut param_cache: &mut HashMap<(Valve, Vec<Valve>, u32, u32), u32>) -> u32
+    distances: &DistMatrix,
+    mut remaining: VisitList,
+    mut curr_flow: u32,
+    mut time_remain: u32) -> (u32, Vec<Valve>)
 {
-    // println!("Visiting {curr} with {time_remain} remaining");
     if time_remain == 0 {
-        // println!("Out of time");
-        return 0;
+        return (0, vec![]);
     }
 
-    if positive_valves.is_empty() {
+    // Try releasing this valve, if it's in the list.
+    let mut this_valve_release = 0;
+
+    if remaining.contains(curr) {
+        remaining.remove(curr);
+        this_valve_release = curr_flow; // One flow happens while the valve is opening.
+        time_remain -= 1;
+        curr_flow += curr.release as u32;
+    }
+
+    if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
-        let result = time_remain * current_release;
-        // println!("Shortcutting at {time_remain}, max is {result}");
-        return result;
+        let result = time_remain * curr_flow;
+        return (result, vec![]);
     }
 
-    let params = (
-        curr.clone(),
-        positive_valves.iter().map(|(v, _)| v.clone()).collect::<Vec<Valve>>(),
-        time_remain,
-        current_release
-    );
+    // Try going to all the other valves and pick the maximum.
+    let mut release_walks = vec![];
+    for dest in &remaining {
+        let walk = distances[curr][dest];
+        if walk > time_remain {
+            release_walks.push((curr_flow * time_remain, vec![]));
+            continue;
+        }
 
-    if let Some(result) = param_cache.get(&params) {
-        return *result;
+        let (mut max_release_to_dest, mut valve_path) = find_max_release(
+            dest,
+            distances,
+            remaining.clone(),
+            curr_flow,
+            time_remain - walk
+        );
+        valve_path.push(dest.clone());
+        max_release_to_dest += curr_flow * walk;
+
+        release_walks.push((max_release_to_dest, valve_path));
     }
 
-    // Try releasing this valve. Drop the current valve from positive valves.
-    let max_release_this = match positive_valves.get(curr) {
-        None => 0,
-        Some(c) => find_max_release(
-            curr,
-            tunnels,
-            &positive_valves.iter().filter(
-                |(valve, _)| *valve != curr
-            ).map(
-                |pair| ((*pair.0).clone(), *pair.1)
-            ).collect(), // Copy the valves w/ values
-            time_remain - 1,
-            current_release + c,
-            param_cache
-        )
-    };
+    let max_walk = release_walks.iter().max_by_key(|&w| w.0).unwrap();
 
-    // Try going down all the connecting tunnels instead.
-    let max_connection = tunnels.get(curr).unwrap().iter().map(
-        |connection|
-            find_max_release(connection, tunnels, positive_valves, time_remain - 1, current_release, param_cache)
-    ).max().unwrap();
+    return (this_valve_release + max_walk.0, max_walk.1.clone());
+}
 
-    let result = current_release + std::cmp::max(max_release_this, max_connection);
-    // println!("From {curr} with {time_remain} remaining, max was {result}");
-    param_cache.insert(params, result);
+fn all_distances(tunnels: &Graph, valves: &VisitList) -> DistMatrix {
+    let mut result = DistMatrix::new();
+    for v in valves {
+        result.insert(
+            v.clone(),
+            dijkstra(v, tunnels, valves.clone())
+        );
+    }
     return result;
 }
 
-fn time_to_reach(start: &Valve, dest: &Valve, tunnels: &Tunnels, visited: &mut VisitList) -> u32 {
-    if visited.contains(start) {
-        return u32::MAX;
+fn dijkstra(start: &Valve, tunnels: &Graph, mut remaining: VisitList) -> Distances {
+    // Initialize the distance matrix with infinities.
+    let mut result = Distances::new();
+    for valve_d in &remaining {
+        result.insert(valve_d.clone(), if start == valve_d { 0 } else { u32::MAX });
     }
 
-    if start == dest {
-        return 0;
+    let mut q = VecDeque::new();
+    q.push_back(start);
+    while !q.is_empty() {
+        let curr = q.pop_front().unwrap();
+
+        // Remove this node from the "remaining" list
+        remaining.remove(curr);
+
+        // Enqueue the connections, if they're remaining.
+        for cx in &tunnels[curr] {
+            // Update distances. It's the minimum of the connection's existing distance or the
+            // current node's distance + 1.
+            *result.get_mut(cx).unwrap() = std::cmp::min(result[cx], result[curr] + 1);
+
+            if remaining.contains(&cx) {
+                q.push_back(&cx);
+            }
+        }
     }
 
-    visited.insert(start.clone());
-    return tunnels.get(start).expect("Valve not found?").iter()
-        .map(
-            |next_valve| time_to_reach(next_valve, dest, tunnels, visited)
-        ).min().unwrap()
-        .checked_add(1)
-        .or(Some(u32::MAX)).unwrap();
+    return result;
 }
 
 #[cfg(test)]
@@ -184,7 +201,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day_16_test() {
-        assert_eq![1, 1]
+    fn dijkstra_test() {
+        let valves: VisitList = HashSet::from([
+            Valve::from_id("AA"),
+            Valve::from_id("BB"),
+            Valve::from_id("CC"),
+            Valve::from_id("DD")
+        ]);
+        let graph: Graph = HashMap::from([
+            (Valve::from_id("AA"), Vec::from([Valve::from_id("BB"), Valve::from_id("CC")])),
+            (Valve::from_id("BB"), Vec::from([Valve::from_id("AA")])),
+            (Valve::from_id("CC"), Vec::from([Valve::from_id("AA"), Valve::from_id("DD")])),
+            (Valve::from_id("DD"), Vec::from([Valve::from_id("CC")])),
+        ]);
+        
+        let actual = dijkstra(&Valve::from_id("AA"), &graph, valves);
+        assert_eq!(format!["{:?}", actual], "{['B', 'B'] (0): 1, ['D', 'D'] (0): 2, ['A', 'A'] (0): 0, ['C', 'C'] (0): 1}");
     }
 }
