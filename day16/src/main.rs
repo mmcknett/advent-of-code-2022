@@ -95,11 +95,6 @@ fn main() {
     println!("Max pressure release is: {pressure_released}");
     println!("Walked... {:?}", walk);
 
-    // This new implementation finishes quickly.
-    // However, it only produces the correct output for the *puzzle* input, not the *sample* input.
-    // Something's still wrong. The valves it's opening are D -> J -> B -> C -> E -> H
-    // It should be opening D -> B -> J -> H -> E -> C
-
     // Part 2
 }
 
