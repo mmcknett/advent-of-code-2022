@@ -90,7 +90,14 @@ fn main() {
 
     println!("Positive valves: {:?}", positive_valves);
 
-    let (pressure_released, walk) = find_max_release(&start, &distances, positive_valves, 0 /* curr_flow */, minutes_remain);
+    let (pressure_released, walk) = find_max_release(
+        &start,
+        &distances,
+        positive_valves,
+        0 /* curr_flow */,
+        0 /* walk_remain */,
+        minutes_remain
+    );
 
     println!("Max pressure release is: {pressure_released}");
     println!("Walked... {:?}", walk);
@@ -103,10 +110,16 @@ fn find_max_release(
     distances: &DistMatrix,
     mut remaining: VisitList,
     mut curr_flow: u32,
+    walk_remain: u32,
     mut time_remain: u32) -> (u32, Vec<Valve>)
 {
     if time_remain == 0 {
         return (0, vec![]);
+    }
+
+    if walk_remain > 0 {
+        let (max_release, path) = find_max_release(curr, distances, remaining, curr_flow, walk_remain - 1, time_remain - 1);
+        return (max_release + curr_flow, path);
     }
 
     // Try releasing this valve, if it's in the list.
@@ -134,15 +147,15 @@ fn find_max_release(
             continue;
         }
 
-        let (mut max_release_to_dest, mut valve_path) = find_max_release(
+        let (max_release_to_dest, mut valve_path) = find_max_release(
             dest,
             distances,
             remaining.clone(),
             curr_flow,
-            time_remain - walk
+            walk,
+            time_remain
         );
         valve_path.push(dest.clone());
-        max_release_to_dest += curr_flow * walk;
 
         release_walks.push((max_release_to_dest, valve_path));
     }
