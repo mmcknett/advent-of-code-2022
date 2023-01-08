@@ -131,7 +131,7 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
 
     // println!("Positive valves: {:?}", positive_valves);
 
-    let (pressure_released, walk) = find_max_release_p2(
+    let pressure_released = find_max_release_p2(
         &start,
         &start,
         &distances,
@@ -145,7 +145,6 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
     // Expected shortest walk for sample:
     // You --      AA ->    JJ -> BB -> CC
     // Elephant -- AA -> DD    -> HH ->    EE
-    println!("Walked... {:?}", walk);
 
     return pressure_released;
 }
@@ -220,11 +219,11 @@ fn find_max_release(
     return this_valve_release + max_walk;
 }
 
-#[cached(
-    type = "SizedCache<String, (u32, Vec<(Option<Valve>, Option<Valve>, u32)>)>",
-    create = "{ SizedCache::with_size(100000) }",
-    convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
-)]
+// #[cached(
+//     type = "SizedCache<String, u32>",
+//     create = "{ SizedCache::with_size(100000) }",
+//     convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
+// )]
 fn find_max_release_p2(
     curr: &Valve,
     curr_el: &Valve,
@@ -234,21 +233,21 @@ fn find_max_release_p2(
     mut walk_remain: u32,
     mut walk_remain_el: u32,
     mut time_remain: u32
-) -> (u32, Vec<(Option<Valve>, Option<Valve>, u32)>)
+) -> u32
 {
     if time_remain == 0 {
-        return (0, vec![]);
+        return 0;
     }
 
     if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
         let result = curr_flow * time_remain;
-        return (result, vec![]);
+        return result;
     }
 
     if walk_remain > 0 && walk_remain_el > 0 {
-        let (max_release, path) = find_max_release_p2(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
-        return (max_release + curr_flow, path);
+        let max_release = find_max_release_p2(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
+        return max_release + curr_flow;
     }
 
     // Try releasing one or both valves, if they're in the list.
@@ -262,8 +261,8 @@ fn find_max_release_p2(
             let new_release = if curr == curr_el { curr.release as u32 } else { curr.release as u32 + curr_el.release as u32 };
             let new_flow = curr_flow + new_release;
 
-            let (max_release, path) = find_max_release_p2(curr, curr_el, distances, remaining, new_flow, walk_remain, walk_remain_el, time_remain - 1);
-            return (max_release + curr_flow, path);
+            let max_release = find_max_release_p2(curr, curr_el, distances, remaining, new_flow, walk_remain, walk_remain_el, time_remain - 1);
+            return max_release + curr_flow;
         } else if i_can_release {
             remaining.remove(curr);
             time_remain -= 1;
@@ -273,14 +272,14 @@ fn find_max_release_p2(
 
             // The elephant is still walking; we need to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
-            let mut release_walks = vec![(new_flow * time_remain, vec![])];
+            let mut release_walks = vec![new_flow * time_remain];
             for dest in &remaining {
                 if dest == curr_el && remaining.len() > 1 {
                     continue; // We shouldn't try to go where the elephant's going, unless it's the last destination.
                 }
 
                 let walk = distances[curr][dest];
-                let (max_release_to_dest, mut valve_path) = find_max_release_p2(
+                let max_release_to_dest = find_max_release_p2(
                     dest,
                     curr_el,
                     distances,
@@ -290,12 +289,11 @@ fn find_max_release_p2(
                     walk_remain_el,
                     time_remain
                 );
-                valve_path.push((Some(dest.clone()), None, time_remain));
 
-                release_walks.push((max_release_to_dest, valve_path));
+                release_walks.push(max_release_to_dest);
             }
-            let max_walk = release_walks.iter().max_by_key(|&w| w.0).unwrap();
-            return (curr_flow + max_walk.0, max_walk.1.clone());
+            let max_walk = release_walks.iter().max().unwrap();
+            return curr_flow + max_walk;
 
         } else if el_can_release {
             remaining.remove(curr_el);
@@ -306,13 +304,13 @@ fn find_max_release_p2(
 
             // We're still walking; the elephant needs to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
-            let mut release_walks = vec![(new_flow * time_remain, vec![])];
+            let mut release_walks = vec![new_flow * time_remain];
             for dest_el in &remaining {
                 if dest_el == curr  && remaining.len() > 1 {
                     continue; // The elephant shouldn't try to go where we're going, unless it's the last destination.
                 }
                 let walk_el = distances[curr_el][dest_el];
-                let (max_release_to_dest, mut valve_path) = find_max_release_p2(
+                let max_release_to_dest = find_max_release_p2(
                     curr,
                     dest_el,
                     distances,
@@ -322,12 +320,11 @@ fn find_max_release_p2(
                     walk_el,
                     time_remain
                 );
-                valve_path.push((None, Some(dest_el.clone()), time_remain));
 
-                release_walks.push((max_release_to_dest, valve_path));
+                release_walks.push(max_release_to_dest);
             }
-            let max_walk = release_walks.iter().max_by_key(|&w| w.0).unwrap();
-            return (curr_flow + max_walk.0, max_walk.1.clone());
+            let max_walk = release_walks.iter().max().unwrap();
+            return curr_flow + max_walk;
         }
     }
 
@@ -339,8 +336,8 @@ fn find_max_release_p2(
         for dest in &remaining {
             for dest_el in &remaining {
                 if dest == dest_el && remaining.len() > 1 { // Don't walk to the same valve unless there's only one left.
-                    if time_remain > 10 {
-                        println!("Skipping {dest:?}");
+                    if time_remain > 15 {
+                        // println!("Skipping {dest:?}");
                     }
                     continue;
                 }
@@ -349,11 +346,11 @@ fn find_max_release_p2(
                 let walk_el = distances[curr][dest_el];
 
                 if walk > time_remain && walk_el > time_remain {
-                    release_walks.push((curr_flow * time_remain, vec![]));
+                    release_walks.push(curr_flow * time_remain);
                     continue;
                 }
 
-                let (max_release_to_dest, mut valve_path) = find_max_release_p2(
+                let max_release_to_dest = find_max_release_p2(
                     dest,
                     dest_el,
                     distances,
@@ -363,15 +360,14 @@ fn find_max_release_p2(
                     walk_el,
                     time_remain
                 );
-                valve_path.push((Some(dest.clone()), Some(dest_el.clone()), time_remain));
 
-                release_walks.push((max_release_to_dest, valve_path));
+                release_walks.push(max_release_to_dest);
             }
         }
     }
 
-    let max_walk = release_walks.iter().max_by_key(|&w| w.0).unwrap();
-    return (max_walk.0, max_walk.1.clone());
+    let max_walk = release_walks.iter().max().unwrap();
+    return *max_walk;
 }
 
 fn all_distances(tunnels: &Graph, valves: &VisitList) -> DistMatrix {

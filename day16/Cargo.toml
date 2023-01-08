@@ -11,3 +11,6 @@ path = "../utils"
 [dependencies]
 scan_fmt = "*"
 cached = "*"
+
+[profile.release]
+debug = 1
