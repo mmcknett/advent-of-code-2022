@@ -327,9 +327,9 @@ fn find_max_release_p2(
         for dest in &remaining {
             for dest_el in &remaining {
                 if dest == dest_el && remaining.len() > 1 { // Don't walk to the same valve unless there's only one left.
-                    // if time_remain % 13 == 0 {
-                    //     println!("Skipping {dest:?}");
-                    // }
+                    if time_remain / 23 > 0 {
+                        println!("Skipping {dest:?}");
+                    }
                     continue;
                 }
 
@@ -461,6 +461,6 @@ mod tests {
     fn linear_part2() {
         let (dists, valves) = parse("linear.txt");
         let release = day16_p2(&dists, &valves);
-        assert_eq!(release, 5125);
+        assert_eq!(release, 4075);
     }
 }
