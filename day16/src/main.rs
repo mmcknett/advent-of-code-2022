@@ -1,6 +1,8 @@
 #[macro_use] extern crate scan_fmt;
 use core::time;
 use std::{collections::{HashMap, HashSet, VecDeque}, hash::Hash, fmt::Debug};
+use cached::proc_macro::cached;
+use cached::SizedCache;
 
 type Graph = HashMap<Valve, Vec<Valve>>;
 type Release = u16;
@@ -107,7 +109,7 @@ fn day16_p1(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
 
     // println!("Positive valves: {:?}", positive_valves);
 
-    let (pressure_released, walk) = find_max_release(
+    let pressure_released = find_max_release(
         &start,
         &start,
         &distances,
@@ -148,6 +150,12 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
     return pressure_released;
 }
 
+// #[cached(
+//     type = "SizedCache<String, u32>",
+//     create = "{ SizedCache::with_size(100000) }",
+//     convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
+// )]
+// Memoizing parameters is about 2.5x slower for part 1.
 fn find_max_release(
     curr: &Valve,
     curr_el: &Valve,
@@ -157,15 +165,15 @@ fn find_max_release(
     walk_remain: u32,
     walk_remain_el: u32,
     mut time_remain: u32
-) -> (u32, Vec<Valve>)
+) -> u32
 {
     if time_remain == 0 {
-        return (0, vec![]);
+        return 0;
     }
 
     if walk_remain > 0 && walk_remain_el > 0 {
-        let (max_release, path) = find_max_release(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
-        return (max_release + curr_flow, path);
+        let max_release = find_max_release(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
+        return max_release + curr_flow;
     }
 
     // Try releasing my valve, if it's in the list.
@@ -181,7 +189,7 @@ fn find_max_release(
     if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
         let result = this_valve_release + time_remain * curr_flow;
-        return (result, vec![]);
+        return result;
     }
 
     // Try going to all the other valves and pick the maximum.
@@ -189,11 +197,11 @@ fn find_max_release(
     for dest in &remaining {
         let walk = distances[curr][dest];
         if walk > time_remain {
-            release_walks.push((curr_flow * time_remain, vec![]));
+            release_walks.push(curr_flow * time_remain);
             continue;
         }
 
-        let (max_release_to_dest, mut valve_path) = find_max_release(
+        let max_release_to_dest = find_max_release(
             dest,
             dest, // Keep the elephant on the same walk with me, for now.
             distances,
@@ -203,16 +211,20 @@ fn find_max_release(
             walk, // Keep the elephant on the same walk with me, for now.
             time_remain
         );
-        valve_path.push(dest.clone());
 
-        release_walks.push((max_release_to_dest, valve_path));
+        release_walks.push(max_release_to_dest);
     }
 
-    let max_walk = release_walks.iter().max_by_key(|&w| w.0).unwrap();
+    let max_walk = release_walks.iter().max().unwrap();
 
-    return (this_valve_release + max_walk.0, max_walk.1.clone());
+    return this_valve_release + max_walk;
 }
 
+#[cached(
+    type = "SizedCache<String, (u32, Vec<(Option<Valve>, Option<Valve>, u32)>)>",
+    create = "{ SizedCache::with_size(100000) }",
+    convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
+)]
 fn find_max_release_p2(
     curr: &Valve,
     curr_el: &Valve,
@@ -327,7 +339,7 @@ fn find_max_release_p2(
         for dest in &remaining {
             for dest_el in &remaining {
                 if dest == dest_el && remaining.len() > 1 { // Don't walk to the same valve unless there's only one left.
-                    if time_remain / 23 > 0 {
+                    if time_remain > 10 {
                         println!("Skipping {dest:?}");
                     }
                     continue;
@@ -436,7 +448,7 @@ mod tests {
         assert_eq!(release, 1651);
     }
 
-    // #[test]
+    #[test]
     fn puzzle_input_produces_correct_output_part1() {
         let (dists, valves) = parse("input.txt");
         let release = day16_p1(&dists, &valves);
