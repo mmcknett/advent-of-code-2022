@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::usize;
 
 fn main() {
     // Read in the file provided as the first argument.
@@ -12,9 +13,17 @@ fn main() {
 
     // Part 1
     let (ringlist, zero) = make_ringlist(&numbers);
-    println!("Ring list: {:?}\nZero: {:?}", ringlist, zero);
+    // println!("Ring list: {:?}\nZero: {:?}", ringlist, zero);
+
     // The ring list is now a vector that maintains references to the nodes in their original order,
     // and the nodes can be re-arranged via linked-list operations.
+    for node in ringlist {
+        node.borrow_mut().move_val();
+    }
+
+    let grove_coords: Vec<isize> = [1000, 2000, 3000].iter().map(|&i| zero.borrow().val_after(i)).collect();
+    let sum: isize = grove_coords.iter().sum();
+    println!("Grove coordinates are {:?} -- sum: {sum}", grove_coords);
 
     // Part 2
 }
@@ -75,6 +84,74 @@ impl Node {
         };
         Rc::new(RefCell::new(node))
     }
+
+    fn move_val(&mut self) {
+        // Move this node within the linked list according to its value.
+        if self.val < 0 {
+            self.move_left();
+        } else if self.val > 0 {
+            self.move_right();
+        }
+        // else if it's 0, no movement at all.
+    }
+
+    fn move_left(&mut self) {
+        let dist = self.val.abs();
+        for _ in 0..dist {
+            // Move left in between self and right.
+            // LP <-> L <-> S <-> R
+            //  ... becomes ...
+            // LP <-> S <-> L <-> R
+            // So update six links: 1 for left_prev and right; two for left and self.
+            let left = self.prev.clone().unwrap();
+            let right = self.next.clone().unwrap();
+            let self_ref = left.borrow().next.clone().unwrap();
+            let left_prev = left.borrow().prev.clone().unwrap();
+
+            left_prev.borrow_mut().next = Some(self_ref.clone());
+            right.borrow_mut().prev = Some(left.clone());
+            left.borrow_mut().next = Some(right.clone());
+            left.borrow_mut().prev = Some(self_ref.clone());
+            self.next = Some(left.clone());
+            self.prev = Some(left_prev.clone());
+        }
+    }
+
+    fn move_right(&mut self) {
+        let dist = self.val.abs();
+        for _ in 0..dist {
+            // Move left in between self and right.
+            // L <-> S <-> R <-> RN
+            //  ... becomes ...
+            // L <-> R <-> S <-> RN
+            // So update six links: 1 for right_next and left; two for right and self.
+            let left = self.prev.clone().unwrap();
+            let right = self.next.clone().unwrap();
+            let self_ref = right.borrow().prev.clone().unwrap();
+            let right_next = right.borrow().next.clone().unwrap();
+
+            right_next.borrow_mut().prev = Some(self_ref.clone());
+            left.borrow_mut().next = Some(right.clone());
+            right.borrow_mut().prev = Some(left.clone());
+            right.borrow_mut().next = Some(self_ref.clone());
+            self.next = Some(right_next.clone());
+            self.prev = Some(right.clone());
+        }
+    }
+
+    fn val_after(&self, mut i: usize) -> isize {
+        if i == 0 {
+            return self.val;
+        }
+
+        let mut curr = self.next.clone();
+        while i > 1 {
+            curr = curr.expect("There shouldn't be any missing references!").borrow().next.clone();
+            i -= 1;
+        }
+
+        return curr.expect("There shouldn't be any missing references!").borrow().val;
+    }
 }
 
 type Link = Rc<RefCell<Node>>;
@@ -86,6 +163,26 @@ mod tests {
 
     #[test]
     fn day_20_test() {
-        assert_eq![1, 1]
+        let v: Vec<isize> = vec![-1, 0, 3];
+        let (ringlist, zero) = make_ringlist(&v);
+        assert_eq!(format!("{:?}", zero), "RefCell { value: {-1 <- 0 -> 3} }");
+
+        ringlist[0].borrow_mut().move_val();
+        assert_eq!(format!("{:?}", ringlist[0]), "RefCell { value: {0 <- -1 -> 3} }");
+        assert_eq!(format!("{:?}", zero), "RefCell { value: {3 <- 0 -> -1} }");
+
+        ringlist[1].borrow_mut().move_val();
+        assert_eq!(format!("{:?}", ringlist[1]), "RefCell { value: {3 <- 0 -> -1} }");
+        assert_eq!(format!("{:?}", zero), "RefCell { value: {3 <- 0 -> -1} }");
+
+        ringlist[2].borrow_mut().move_val();
+        // [0,-1,3] -> [0,3,-1] -> [0,-1,3] -> [0,3,-1]
+        assert_eq!(format!("{:?}", ringlist[2]), "RefCell { value: {0 <- 3 -> -1} }");
+        assert_eq!(format!("{:?}", zero), "RefCell { value: {-1 <- 0 -> 3} }");
+
+        assert_eq!(zero.borrow().val_after(0), 0);
+        assert_eq!(zero.borrow().val_after(1), 3);
+        assert_eq!(zero.borrow().val_after(2), -1);
+        assert_eq!(zero.borrow().val_after(3), 0);
     }
 }
