@@ -281,7 +281,7 @@ fn find_max_release_p2(
 
     let possible_flow = max_possible(&remaining, accumulation, curr_flow, time_remain);
     if possible_flow < *best_seen {
-        return 0; // We can prune here; this flow can't beat the best seen so far.
+        return possible_flow; // We can prune here; this flow can't beat the best seen so far.
     }
 
     if remaining.is_empty() {
@@ -325,8 +325,8 @@ fn find_max_release_p2(
                 distances,
                 remaining,
                 new_flow,
-                walk_remain,
-                walk_remain_el,
+                0,
+                0,
                 time_remain - 1,
                 accumulation + curr_flow,
                 best_seen
@@ -336,12 +336,13 @@ fn find_max_release_p2(
         } else if i_can_release {
             remaining.remove(curr);
             time_remain -= 1;
-            walk_remain_el = walk_remain_el.saturating_sub(1);
+            walk_remain_el -= 1;
 
             let new_flow = curr_flow + curr.release as u32;
 
             // The elephant is still walking; we need to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
+            // (i.e., the current flow released while opening the valve, plus what was already accumulated, plus the new flow times the remaining time after the valve opened.)
             let mut release_walks = vec![new_flow * time_remain + curr_flow + accumulation];
             for dest in &remaining {
                 if dest == curr_el && remaining.len() > 1 {
@@ -370,13 +371,14 @@ fn find_max_release_p2(
 
         } else if el_can_release {
             remaining.remove(curr_el);
-            walk_remain = walk_remain.saturating_sub(1);
             time_remain -= 1;
+            walk_remain -= 1;
 
             let new_flow = curr_flow + curr_el.release as u32;
 
             // We're still walking; the elephant needs to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
+            // (i.e., the current flow released while opening the valve, plus what was already accumulated, plus the new flow times the remaining time after the valve opened.)
             let mut release_walks = vec![new_flow * time_remain + curr_flow + accumulation];
             for dest_el in &remaining {
                 if dest_el == curr  && remaining.len() > 1 {
@@ -412,14 +414,11 @@ fn find_max_release_p2(
         for dest in &remaining {
             for dest_el in &remaining {
                 if dest == dest_el && remaining.len() > 1 { // Don't walk to the same valve unless there's only one left.
-                    if time_remain > 20 {
-                        // println!("Skipping {dest:?}");
-                    }
                     continue;
                 }
 
                 let walk = distances[curr][dest];
-                let walk_el = distances[curr][dest_el];
+                let walk_el = distances[curr_el][dest_el];
 
                 let max_release_to_dest = find_max_release_p2(
                     dest,
@@ -551,5 +550,8 @@ mod tests {
         let (dists, valves) = parse("input.txt");
         let release = day16_p2(&dists, &valves);
         assert![release < 1956];
+        assert![release < 1954];
+        assert![release != 1877];
+        assert_eq!(release, 1933);
     }
 }
