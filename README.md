@@ -37,7 +37,17 @@ There are signs that this problem is just some math operation, under the covers.
 
 I wrote a recursive `find_max_release` search algorithm that ended up being exponential run-time. Caching parameters isn't a good enough strategy for this one; the intermediate results are too diverse. I let part 1 run overnight (<8 hours I suppose) and it produced a result, but I haven't gotten time to optimize part 1 and then finish part 2.
 
-TODO: Write up part 2 when finished
+Before starting part 2, I knew I needed to optimize. I started with the shortest-path-finding algorithm. I used dijkstra's algorithm to generate the shortest path between each valve and kept a matrix of distances. That drastically improved the run time.
+
+For part 2, I started by adapting `find_max_release` to make a recursive call for each step, so that I could track the narrator and an elephant independently using the same branching mechanism. I also created a smaller example that helped me debug the two independent walkers. This ended up working great for the sample input, but it was just too slow for the puzzle input. I tried optimizing with memoization and reducing the extra copying of vectors that I had for debugging paths, but that also wasn't sufficient. Reddit solutions mentioned "branch and bound", and looking that up ended up being the key for me.
+
+Caching solutions for these problems isn't enough; sometimes you need to cut off the algorithm when it's possible to tell that you won't be able to do better by going down a particular branch. For this problem, my heuristic function checks if you can beat the current best by immediately opening the best valve, then walking to the next best valve, opening it, and so on. It's not possible to go faster than that, since walks are longer between valves. That was sufficient to bring down the run time of part 2 for the puzzle input to a second or so. (Upon reflection, the heuristic function isn't wholly valid for part 2. Valves can be opened slightly faster, so I should only decrease time remaining by 1 minute instead of 2. Luckily, it still let the algorithm produce the right output, and it's faster as is. However, this function is liable to be a source of weird bugs, generally.)
+
+### Lessons learned
+* Don't forget the "bound" part of branch & bound! I often reach for memoization, and then forget that I could be tracking a "best result so far" that I could use to prune branches of the algorithm that are provably worse, based on a heuristic function.
+* [ ] Find a graph library so you don't have to implement shortest-path-finding yourself.
+* Don't try to reinvent the wheel on graphs, either. Use a HashMap of (Node, HashSet<Node>) for edges. Or better yet, some library that holds a graph representation.
+* Making aliased types for different things like release rate, distance, etc. made it easier to keep things straight in a problem that has lots of moving parts. Use the type system! 
 
 ## Day 15
 [Day 15 prompt](https://adventofcode.com/2022/day/15)
