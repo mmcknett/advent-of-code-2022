@@ -5,6 +5,15 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 20
+[Day 20 prompt](https://adventofcode.com/2022/day/20)
+
+I picked back up on new days today, after two weeks of travel and then spending yesterday getting back into the grove by finishing Day 16.
+
+This problem seems simple when you first look at it, but the requirements made it tricky. I took a little time to think about it, and ultimately landed on turning the numbers into a doubly-linked list. That let me maintain the original order of the numbers (by reference to the linked list nodes), but freely rearrange them according to the rules of the problem. Since I needed to reference the nodes directly, I decided it would be easiest to write my own Linked List struct, which meant learning about how Rust handles heap allocation and pointers. (I got surprisingly far into coding in Rust without needing to really figure them out!) More on my learning experience in the [Day 20 readme](./day20/README.md).
+
+I spent most of my time figuring out how to work with Rust `Rc` (ref counted pointers) and `RefCell`s (the abstraction that makes it so you can mutate what those reference-counted pointers point to at all). As long as you have the right data structure, you can basically follow the problem statement instructions blindly. For part 2, the big wrinkle to deal with is the size of the numbers getting big, which means you loop around the list many times. To deal with that, just eliminate the duplicate moves by moving the distance you're supposed to move `mod list.len() - 1`. (It's length - 1 because `[0, 1, 2]` and `[1, 2, 0]` are equivalent. So if you're moving `0` to the right, you got from `[1, 2, 0]` to `[1, 0, 2]`, not to `[0, 1, 2]`).
+
 ## Day 19
 [Day 19 prompt](https://adventofcode.com/2022/day/19)
 

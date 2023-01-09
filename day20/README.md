@@ -12,11 +12,14 @@ I'll start by creating my own doubly-linked-list Node class. This will also give
 ### Rust heap containers
 I started by having a look at some Linked list and doubly linked list example implementations. I thought [Roka's blog](https://rtoch.com/posts/rust-doubly-linked-list/) had a great starting point. After reading the [`cell`](https://doc.rust-lang.org/std/cell/index.html) and [`boxed`](https://doc.rust-lang.org/std/boxed/index.html) module docs, I felt like I had a pretty good intro, but [this user forum answer](https://users.rust-lang.org/t/confused-between-box-rc-cell-arc/10946/2) really drove it home for me.
 
->Box<T> is for single ownership.
->Rc<T> is for multiple ownership.
->Arc<T> is for multiple ownership, but threadsafe.
->Cell<T> is for "interior mutability" for Copy types; that is, when you need to mutate something behind a &T.
+> - Box<T> is for single ownership.
+> - Rc<T> is for multiple ownership.
+> - Arc<T> is for multiple ownership, but threadsafe.
+> - Cell<T> is for "interior mutability" for Copy types; that is, when you need to mutate something behind a &T.
 
 So `Box` is like C++ `unique_ptr` and `Rc` is a ref-counted smart pointer like `shared_ptr`. Since you can't actually have multiple mutable references in Rust *at all*, there is `Cell` and `RefCell` available to let your ref-counted memory be mutable from multiple places. However, they're not thread safe, which is why the docs don't use them with `Arc` (atomic refcounts).
 
 For today's data structure, I think I'll need to use RefCells to refer to the Nodes of the doubly linked list I create.
+
+## Post-implementation
+Given how much I had to `clone`, I may have actually been better off using `Cell` instead of `RefCell`, since I think that is for using types that can be cloned to update ownership. Might be worth looking into another time.
