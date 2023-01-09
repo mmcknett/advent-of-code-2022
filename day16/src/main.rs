@@ -1,6 +1,6 @@
 #[macro_use] extern crate scan_fmt;
 use core::time;
-use std::{collections::{HashMap, HashSet, VecDeque}, hash::Hash, fmt::Debug};
+use std::{collections::{HashMap, HashSet, VecDeque}, fmt::Debug};
 use cached::proc_macro::cached;
 use cached::SizedCache;
 
@@ -109,18 +109,22 @@ fn day16_p1(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
 
     // println!("Positive valves: {:?}", positive_valves);
 
+    let mut best_seen = 0;
     let pressure_released = find_max_release(
-        &start,
         &start,
         &distances,
         positive_valves.clone(),
         0 /* curr_flow */,
         0 /* walk_remain */,
-        0 /* walk_reamin_el */,
-        minutes_remain
+        minutes_remain,
+        0 /* accumulation */,
+        &mut best_seen
     );
 
-    // println!("Walked... {:?}", walk);
+    if best_seen != pressure_released {
+        panic!("Not supposed to do that.");
+    }
+
     return pressure_released;
 }
 
@@ -131,6 +135,7 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
 
     // println!("Positive valves: {:?}", positive_valves);
 
+    let mut best_seen = 0;
     let pressure_released = find_max_release_p2(
         &start,
         &start,
@@ -139,12 +144,18 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
         0 /* curr_flow */,
         0 /* walk_remain */,
         0 /* walk_reamin_el */,
-        minutes_remain
+        minutes_remain,
+        0 /* accumulation */,
+        &mut best_seen
     );
 
     // Expected shortest walk for sample:
     // You --      AA ->    JJ -> BB -> CC
     // Elephant -- AA -> DD    -> HH ->    EE
+
+    if best_seen != pressure_released {
+        panic!("Not supposed to do that.");
+    }
 
     return pressure_released;
 }
@@ -152,27 +163,42 @@ fn day16_p2(distances: &DistMatrix, positive_valves: &VisitList) -> u32 {
 // #[cached(
 //     type = "SizedCache<String, u32>",
 //     create = "{ SizedCache::with_size(100000) }",
-//     convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
+//     convert = r#"{ format!("{:?}{:?}{}{}{}{}", curr, remaining, curr_flow, walk_remain, time_remain, accumulation) }"#
 // )]
 // Memoizing parameters is about 2.5x slower for part 1.
 fn find_max_release(
     curr: &Valve,
-    curr_el: &Valve,
     distances: &DistMatrix,
     mut remaining: VisitList,
     mut curr_flow: u32,
     walk_remain: u32,
-    walk_remain_el: u32,
-    mut time_remain: u32
+    mut time_remain: u32,
+    accumulation: u32,
+    mut best_seen: &mut u32
 ) -> u32
 {
     if time_remain == 0 {
-        return 0;
+        return accumulation;
     }
 
-    if walk_remain > 0 && walk_remain_el > 0 {
-        let max_release = find_max_release(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
-        return max_release + curr_flow;
+    let possible_flow = max_possible(&remaining, accumulation, curr_flow, time_remain);
+    if possible_flow < *best_seen {
+        return 0; // We can prune here; this flow can't beat the best seen so far.
+    }
+
+    if walk_remain > 0 {
+        let max_release = find_max_release(
+            curr,
+            distances,
+            remaining,
+            curr_flow,
+            walk_remain - 1,
+            time_remain - 1,
+            accumulation + curr_flow,
+            best_seen
+        );
+        *best_seen = std::cmp::max::<u32>(max_release, *best_seen);
+        return max_release;
     }
 
     // Try releasing my valve, if it's in the list.
@@ -187,42 +213,53 @@ fn find_max_release(
 
     if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
-        let result = this_valve_release + time_remain * curr_flow;
-        return result;
+        let max_release = accumulation + this_valve_release + time_remain * curr_flow;
+        *best_seen = std::cmp::max::<u32>(max_release, *best_seen);
+        return max_release;
     }
 
     // Try going to all the other valves and pick the maximum.
     let mut release_walks = vec![];
     for dest in &remaining {
         let walk = distances[curr][dest];
-        if walk > time_remain {
-            release_walks.push(curr_flow * time_remain);
-            continue;
-        }
 
         let max_release_to_dest = find_max_release(
             dest,
-            dest, // Keep the elephant on the same walk with me, for now.
             distances,
             remaining.clone(),
             curr_flow,
             walk,
-            walk, // Keep the elephant on the same walk with me, for now.
-            time_remain
+            time_remain,
+            this_valve_release + accumulation,
+            best_seen
         );
 
         release_walks.push(max_release_to_dest);
     }
 
     let max_walk = release_walks.iter().max().unwrap();
+    *best_seen = std::cmp::max::<u32>(*max_walk, *best_seen);
+    return *max_walk;
+}
 
-    return this_valve_release + max_walk;
+fn max_possible(valves: &VisitList, accumulation: u32, curr_flow: u32, time_remaining: u32) -> u32 {
+    let mut releases: Vec<u32> = valves.iter().map(|v| v.release as u32).collect();
+    releases.sort();
+
+    let mut possible_flow = 0;
+    let mut time_countdown = time_remaining;
+    for r in releases.iter().rev() {
+        possible_flow += r * time_countdown;
+        time_countdown = time_countdown.saturating_sub(2);
+    }
+
+    return time_remaining * curr_flow + possible_flow + accumulation;
 }
 
 // #[cached(
 //     type = "SizedCache<String, u32>",
 //     create = "{ SizedCache::with_size(100000) }",
-//     convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain) }"#
+//     convert = r#"{ format!("{:?}{:?}{:?}{}{}{}{}{}", curr, curr_el, remaining, curr_flow, walk_remain, walk_remain_el, time_remain, accumulation) }"#
 // )]
 fn find_max_release_p2(
     curr: &Valve,
@@ -232,22 +269,43 @@ fn find_max_release_p2(
     mut curr_flow: u32,
     mut walk_remain: u32,
     mut walk_remain_el: u32,
-    mut time_remain: u32
+    mut time_remain: u32,
+    accumulation: u32,
+    mut best_seen: &mut u32
 ) -> u32
 {
     if time_remain == 0 {
-        return 0;
+        *best_seen = std::cmp::max::<u32>(accumulation, *best_seen);
+        return accumulation;
+    }
+
+    let possible_flow = max_possible(&remaining, accumulation, curr_flow, time_remain);
+    if possible_flow < *best_seen {
+        return 0; // We can prune here; this flow can't beat the best seen so far.
     }
 
     if remaining.is_empty() {
         // Nothing worth walking to, so use the remaining time to release at the current rate.
-        let result = curr_flow * time_remain;
-        return result;
+        let max_release = accumulation + time_remain * curr_flow;
+        *best_seen = std::cmp::max::<u32>(max_release, *best_seen);
+        return max_release;
     }
 
     if walk_remain > 0 && walk_remain_el > 0 {
-        let max_release = find_max_release_p2(curr, curr_el, distances, remaining, curr_flow, walk_remain - 1, walk_remain_el - 1, time_remain - 1);
-        return max_release + curr_flow;
+        let max_release = find_max_release_p2(
+            curr,
+            curr_el,
+            distances,
+            remaining,
+            curr_flow,
+            walk_remain - 1,
+            walk_remain_el - 1,
+            time_remain - 1,
+            accumulation + curr_flow,
+            best_seen
+        );
+        *best_seen = std::cmp::max::<u32>(max_release, *best_seen);
+        return max_release;
     }
 
     // Try releasing one or both valves, if they're in the list.
@@ -261,8 +319,20 @@ fn find_max_release_p2(
             let new_release = if curr == curr_el { curr.release as u32 } else { curr.release as u32 + curr_el.release as u32 };
             let new_flow = curr_flow + new_release;
 
-            let max_release = find_max_release_p2(curr, curr_el, distances, remaining, new_flow, walk_remain, walk_remain_el, time_remain - 1);
-            return max_release + curr_flow;
+            let max_release = find_max_release_p2(
+                curr,
+                curr_el,
+                distances,
+                remaining,
+                new_flow,
+                walk_remain,
+                walk_remain_el,
+                time_remain - 1,
+                accumulation + curr_flow,
+                best_seen
+            );
+            *best_seen = std::cmp::max::<u32>(max_release, *best_seen);
+            return max_release;
         } else if i_can_release {
             remaining.remove(curr);
             time_remain -= 1;
@@ -272,7 +342,7 @@ fn find_max_release_p2(
 
             // The elephant is still walking; we need to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
-            let mut release_walks = vec![new_flow * time_remain];
+            let mut release_walks = vec![new_flow * time_remain + curr_flow + accumulation];
             for dest in &remaining {
                 if dest == curr_el && remaining.len() > 1 {
                     continue; // We shouldn't try to go where the elephant's going, unless it's the last destination.
@@ -287,13 +357,16 @@ fn find_max_release_p2(
                     new_flow,
                     walk,
                     walk_remain_el,
-                    time_remain
+                    time_remain,
+                    accumulation + curr_flow,
+                    best_seen
                 );
 
                 release_walks.push(max_release_to_dest);
             }
             let max_walk = release_walks.iter().max().unwrap();
-            return curr_flow + max_walk;
+            *best_seen = std::cmp::max::<u32>(*max_walk, *best_seen);
+            return *max_walk;
 
         } else if el_can_release {
             remaining.remove(curr_el);
@@ -304,7 +377,7 @@ fn find_max_release_p2(
 
             // We're still walking; the elephant needs to move to a new valve.
             // The base-case release walk is doing nothing and letting the flow go as-is.
-            let mut release_walks = vec![new_flow * time_remain];
+            let mut release_walks = vec![new_flow * time_remain + curr_flow + accumulation];
             for dest_el in &remaining {
                 if dest_el == curr  && remaining.len() > 1 {
                     continue; // The elephant shouldn't try to go where we're going, unless it's the last destination.
@@ -318,13 +391,16 @@ fn find_max_release_p2(
                     new_flow,
                     walk_remain,
                     walk_el,
-                    time_remain
+                    time_remain,
+                    accumulation + curr_flow,
+                    best_seen
                 );
 
                 release_walks.push(max_release_to_dest);
             }
             let max_walk = release_walks.iter().max().unwrap();
-            return curr_flow + max_walk;
+            *best_seen = std::cmp::max::<u32>(*max_walk, *best_seen);
+            return *max_walk;
         }
     }
 
@@ -336,7 +412,7 @@ fn find_max_release_p2(
         for dest in &remaining {
             for dest_el in &remaining {
                 if dest == dest_el && remaining.len() > 1 { // Don't walk to the same valve unless there's only one left.
-                    if time_remain > 15 {
+                    if time_remain > 20 {
                         // println!("Skipping {dest:?}");
                     }
                     continue;
@@ -344,11 +420,6 @@ fn find_max_release_p2(
 
                 let walk = distances[curr][dest];
                 let walk_el = distances[curr][dest_el];
-
-                if walk > time_remain && walk_el > time_remain {
-                    release_walks.push(curr_flow * time_remain);
-                    continue;
-                }
 
                 let max_release_to_dest = find_max_release_p2(
                     dest,
@@ -358,7 +429,9 @@ fn find_max_release_p2(
                     curr_flow,
                     walk,
                     walk_el,
-                    time_remain
+                    time_remain,
+                    accumulation,
+                    best_seen
                 );
 
                 release_walks.push(max_release_to_dest);
@@ -367,6 +440,7 @@ fn find_max_release_p2(
     }
 
     let max_walk = release_walks.iter().max().unwrap();
+    *best_seen = std::cmp::max::<u32>(*max_walk, *best_seen);
     return *max_walk;
 }
 
@@ -445,13 +519,6 @@ mod tests {
     }
 
     #[test]
-    fn puzzle_input_produces_correct_output_part1() {
-        let (dists, valves) = parse("input.txt");
-        let release = day16_p1(&dists, &valves);
-        assert_eq!(release, 1376);
-    }
-
-    #[test]
     fn sample_produces_correct_output_part2() {
         let (dists, valves) = parse("sample.txt");
         let release = day16_p2(&dists, &valves);
@@ -470,5 +537,19 @@ mod tests {
         let (dists, valves) = parse("linear.txt");
         let release = day16_p2(&dists, &valves);
         assert_eq!(release, 4075);
+    }
+
+    #[test]
+    fn puzzle_input_produces_correct_output_part1() {
+        let (dists, valves) = parse("input.txt");
+        let release = day16_p1(&dists, &valves);
+        assert_eq!(release, 1376);
+    }
+
+    #[test]
+    fn puzzle_input_part2() {
+        let (dists, valves) = parse("input.txt");
+        let release = day16_p2(&dists, &valves);
+        assert![release < 1956];
     }
 }

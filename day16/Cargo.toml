@@ -14,3 +14,7 @@ cached = "*"
 
 [profile.release]
 debug = 1
+
+[profile.test]
+opt-level = 3
+overflow-checks = false
