@@ -1,4 +1,5 @@
 use cached::proc_macro::cached;
+use cached::SizedCache;
 use scan_fmt::scan_fmt;
 
 fn main() {
@@ -22,13 +23,17 @@ fn quality_level(blueprint: &Blueprint) -> u32 {
 
     const MINUTES: u32 = 24;
     // const MINUTES: u32 = 19;
-    let max_geodes = max_geodes(blueprint.clone(), fac, MINUTES);
+    let max_geodes = max_geodes(blueprint, fac, MINUTES);
     println!("Max geodes for {}: {max_geodes}", blueprint.id);
     return max_geodes * blueprint.id;
 }
 
-#[cached]
-fn max_geodes(blueprint: Blueprint, mut factory: Factory, minutes_remaining: u32) -> u32 {
+#[cached(
+    type = "SizedCache<String, u32>",
+    create = "{ SizedCache::with_size(1000) }",
+    convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, minutes_remaining) }"#
+)]
+fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u32) -> u32 {
     if minutes_remaining == 0 {
         // if factory.geodes > 0 {
         //     println!("{:?}", factory);
@@ -50,7 +55,7 @@ fn max_geodes(blueprint: Blueprint, mut factory: Factory, minutes_remaining: u32
         next_fac.ore -= blueprint.geode_robot_ore;
         next_fac.robot_in_progress = Some(Robot::Geode);
 
-        let max_next = max_geodes(blueprint.clone(), next_fac, minutes_remaining - 1);
+        let max_next = max_geodes(blueprint, next_fac, minutes_remaining - 1);
         possible_max_geodes.push(max_next);
     }
 
@@ -62,7 +67,7 @@ fn max_geodes(blueprint: Blueprint, mut factory: Factory, minutes_remaining: u32
         next_fac.ore -= blueprint.obsidian_robot_ore;
         next_fac.robot_in_progress = Some(Robot::Obsidian);
 
-        let max_next = max_geodes(blueprint.clone(), next_fac, minutes_remaining - 1);
+        let max_next = max_geodes(blueprint, next_fac, minutes_remaining - 1);
         possible_max_geodes.push(max_next);
     }
 
@@ -71,7 +76,7 @@ fn max_geodes(blueprint: Blueprint, mut factory: Factory, minutes_remaining: u32
         next_fac.ore -= blueprint.clay_robot_ore;
         next_fac.robot_in_progress = Some(Robot::Clay);
 
-        let max_next = max_geodes(blueprint.clone(), next_fac, minutes_remaining - 1);
+        let max_next = max_geodes(blueprint, next_fac, minutes_remaining - 1);
         possible_max_geodes.push(max_next);
     }
 
@@ -80,12 +85,12 @@ fn max_geodes(blueprint: Blueprint, mut factory: Factory, minutes_remaining: u32
         next_fac.ore -= blueprint.ore_robot_ore;
         next_fac.robot_in_progress = Some(Robot::Ore);
 
-        let max_next = max_geodes(blueprint.clone(), next_fac, minutes_remaining - 1);
+        let max_next = max_geodes(blueprint, next_fac, minutes_remaining - 1);
         possible_max_geodes.push(max_next);
     }
 
     // Also try *not* building a robot now.
-    let max_no_new_robot = max_geodes(blueprint.clone(), factory.clone(), minutes_remaining - 1);
+    let max_no_new_robot = max_geodes(blueprint, factory.clone(), minutes_remaining - 1);
     possible_max_geodes.push(max_no_new_robot);
 
     let max = *possible_max_geodes.iter().max().unwrap();
