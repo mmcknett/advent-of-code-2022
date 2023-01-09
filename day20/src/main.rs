@@ -17,15 +17,28 @@ fn main() {
 
     // The ring list is now a vector that maintains references to the nodes in their original order,
     // and the nodes can be re-arranged via linked-list operations.
-    for node in ringlist {
-        node.borrow_mut().move_val();
+    for node in &ringlist {
+        node.borrow_mut().move_val(ringlist.len());
     }
 
     let grove_coords: Vec<isize> = [1000, 2000, 3000].iter().map(|&i| zero.borrow().val_after(i)).collect();
     let sum: isize = grove_coords.iter().sum();
-    println!("Grove coordinates are {:?} -- sum: {sum}", grove_coords);
+    println!("Part 1: Grove coordinates are {:?} -- sum: {sum}", grove_coords);
 
     // Part 2
+    const KEY: isize = 811589153; // Shouldn't need to switch to i64 on my M1 mac.
+    let numbers: Vec<isize> = numbers.iter().map(|n| n * KEY).collect();
+    let (ringlist, zero) = make_ringlist(&numbers);
+
+    for _ in 0..10 {
+        for node in &ringlist {
+            node.borrow_mut().move_val(ringlist.len());
+        }
+    }
+
+    let grove_coords: Vec<isize> = [1000, 2000, 3000].iter().map(|&i| zero.borrow().val_after(i)).collect();
+    let sum: isize = grove_coords.iter().sum();
+    println!("Part 2: Grove coordinates are {:?} -- sum: {sum}", grove_coords);
 }
 
 fn make_ringlist(numbers: &Vec<isize>) -> (RingList, Link) {
@@ -85,18 +98,18 @@ impl Node {
         Rc::new(RefCell::new(node))
     }
 
-    fn move_val(&mut self) {
+    fn move_val(&mut self, list_len: usize) {
         // Move this node within the linked list according to its value.
         if self.val < 0 {
-            self.move_left();
+            self.move_left(list_len);
         } else if self.val > 0 {
-            self.move_right();
+            self.move_right(list_len);
         }
         // else if it's 0, no movement at all.
     }
 
-    fn move_left(&mut self) {
-        let dist = self.val.abs();
+    fn move_left(&mut self, list_len: usize) {
+        let dist = self.val.abs() as usize % (list_len - 1);
         for _ in 0..dist {
             // Move left in between self and right.
             // LP <-> L <-> S <-> R
@@ -117,8 +130,8 @@ impl Node {
         }
     }
 
-    fn move_right(&mut self) {
-        let dist = self.val.abs();
+    fn move_right(&mut self, list_len: usize) {
+        let dist = self.val.abs() as usize % (list_len - 1);
         for _ in 0..dist {
             // Move left in between self and right.
             // L <-> S <-> R <-> RN
@@ -167,15 +180,15 @@ mod tests {
         let (ringlist, zero) = make_ringlist(&v);
         assert_eq!(format!("{:?}", zero), "RefCell { value: {-1 <- 0 -> 3} }");
 
-        ringlist[0].borrow_mut().move_val();
+        ringlist[0].borrow_mut().move_val(3);
         assert_eq!(format!("{:?}", ringlist[0]), "RefCell { value: {0 <- -1 -> 3} }");
         assert_eq!(format!("{:?}", zero), "RefCell { value: {3 <- 0 -> -1} }");
 
-        ringlist[1].borrow_mut().move_val();
+        ringlist[1].borrow_mut().move_val(3);
         assert_eq!(format!("{:?}", ringlist[1]), "RefCell { value: {3 <- 0 -> -1} }");
         assert_eq!(format!("{:?}", zero), "RefCell { value: {3 <- 0 -> -1} }");
 
-        ringlist[2].borrow_mut().move_val();
+        ringlist[2].borrow_mut().move_val(3);
         // [0,-1,3] -> [0,3,-1] -> [0,-1,3] -> [0,3,-1]
         assert_eq!(format!("{:?}", ringlist[2]), "RefCell { value: {0 <- 3 -> -1} }");
         assert_eq!(format!("{:?}", zero), "RefCell { value: {-1 <- 0 -> 3} }");
