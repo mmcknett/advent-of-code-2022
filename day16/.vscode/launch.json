@@ -7,6 +7,24 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Linear input day16",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=day16",
+          "--package=day16"
+        ],
+        "filter": {
+          "name": "day16",
+          "kind": "bin"
+        }
+      },
+      "args": ["./linear.txt"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Sample input day16",
       "cargo": {
         "args": [
