@@ -6,39 +6,46 @@ use std::usize;
 fn main() {
     // Read in the file provided as the first argument.
     let path = utils::args_iter().next().expect("Missing argument");
-    let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
+    let numbers = parse(&path);
 
-    // Parse input
+    part1(&numbers);
+
+    part2(&numbers);
+}
+
+fn parse(path: &str) -> Vec<isize> {
+    let input = std::fs::read_to_string(path).expect(&format!["Couldn't find file \"{path}\""]);
     let numbers: Vec<isize> = input.split("\n").map(|n| n.parse::<isize>().unwrap()).collect();
+    return numbers;
+}
 
-    // Part 1
-    let (ringlist, zero) = make_ringlist(&numbers);
+fn part1(numbers: &Vec<isize>) -> isize {
+    let (ringlist, zero) = make_ringlist(numbers);
     // println!("Ring list: {:?}\nZero: {:?}", ringlist, zero);
-
     // The ring list is now a vector that maintains references to the nodes in their original order,
     // and the nodes can be re-arranged via linked-list operations.
     for node in &ringlist {
         node.borrow_mut().move_val(ringlist.len());
     }
-
     let grove_coords: Vec<isize> = [1000, 2000, 3000].iter().map(|&i| zero.borrow().val_after(i)).collect();
     let sum: isize = grove_coords.iter().sum();
     println!("Part 1: Grove coordinates are {:?} -- sum: {sum}", grove_coords);
+    return sum;
+}
 
-    // Part 2
+fn part2(numbers: &Vec<isize>) -> isize {
     const KEY: isize = 811589153; // Shouldn't need to switch to i64 on my M1 mac.
     let numbers: Vec<isize> = numbers.iter().map(|n| n * KEY).collect();
     let (ringlist, zero) = make_ringlist(&numbers);
-
     for _ in 0..10 {
         for node in &ringlist {
             node.borrow_mut().move_val(ringlist.len());
         }
     }
-
     let grove_coords: Vec<isize> = [1000, 2000, 3000].iter().map(|&i| zero.borrow().val_after(i)).collect();
     let sum: isize = grove_coords.iter().sum();
     println!("Part 2: Grove coordinates are {:?} -- sum: {sum}", grove_coords);
+    return sum;
 }
 
 fn make_ringlist(numbers: &Vec<isize>) -> (RingList, Link) {
@@ -197,5 +204,19 @@ mod tests {
         assert_eq!(zero.borrow().val_after(1), 3);
         assert_eq!(zero.borrow().val_after(2), -1);
         assert_eq!(zero.borrow().val_after(3), 0);
+    }
+
+    #[test]
+    fn sample_answers() {
+        let numbers = parse("sample.txt");
+        assert_eq![part1(&numbers), 3];
+        assert_eq![part2(&numbers), 1623178306];
+    }
+
+    #[test]
+    fn input_answers() {
+        let numbers = parse("input.txt");
+        assert_eq![part1(&numbers), 18257];
+        assert_eq![part2(&numbers), 4148032160983];
     }
 }

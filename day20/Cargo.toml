@@ -9,3 +9,6 @@ edition = "2021"
 path = "../utils"
 
 [dependencies]
+
+[profile.test]
+opt-level = 3
