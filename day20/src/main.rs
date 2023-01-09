@@ -1,4 +1,6 @@
-use std::{rc::Rc, cell::{RefCell}, fmt::Debug};
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::fmt::Debug;
 
 fn main() {
     // Read in the file provided as the first argument.
@@ -11,6 +13,8 @@ fn main() {
     // Part 1
     let (ringlist, zero) = make_ringlist(&numbers);
     println!("Ring list: {:?}\nZero: {:?}", ringlist, zero);
+    // The ring list is now a vector that maintains references to the nodes in their original order,
+    // and the nodes can be re-arranged via linked-list operations.
 
     // Part 2
 }
