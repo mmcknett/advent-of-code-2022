@@ -11,3 +11,5 @@ path = "../utils"
 [dependencies]
 scan_fmt = "*"
 cached = "*"
+strum = "0.24.1"
+strum_macros = "0.24.3"
