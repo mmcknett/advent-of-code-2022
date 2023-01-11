@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cached::proc_macro::cached;
 use cached::SizedCache;
 use scan_fmt::scan_fmt;
@@ -7,10 +9,7 @@ use strum_macros::EnumIter;
 fn main() {
     // Read in the file provided as the first argument.
     let path = utils::args_iter().next().expect("Missing argument");
-    let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
-
-    // Parse input
-    let blueprints: Vec<Blueprint> = input.split("\n").map(Blueprint::new).collect();
+    let blueprints = parse(&path);
 
     // Part 1
     let quality_levels: Vec<u32> = blueprints.iter().map(quality_level).collect();
@@ -18,6 +17,13 @@ fn main() {
     println!("Part 1 -- Sum of quality levels: {quality_level_sum}");
 
     // Part 2
+}
+
+fn parse(path: &str) -> Vec<Blueprint> {
+    let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
+    // Parse input
+    let blueprints: Vec<Blueprint> = input.split("\n").map(Blueprint::new).collect();
+    blueprints
 }
 
 fn quality_level(blueprint: &Blueprint) -> u32 {
@@ -221,6 +227,15 @@ impl Factory {
         }
     }
 
+    fn robot_quantity(&self, robot_type: Robot) -> u32 {
+        match robot_type {
+            Robot::Ore => self.ore_robots,
+            Robot::Clay => self.clay_robots,
+            Robot::Obsidian => self.obsidian_robots,
+            Robot::Geode => self.geode_robots
+        }
+    }
+
     fn produce(&mut self) {
         self.ore += self.ore_robots;
         self.clay += self.clay_robots;
@@ -237,6 +252,68 @@ impl Factory {
         }
         self.robot_in_progress = None;
     }
+}
+
+type Plan = HashMap<Robot, u32>;
+
+fn time_to_nth_geodebot(plan: &Plan, mut factory: Factory, blueprint: &Blueprint, n: u32, accum: u32, mut min_so_far: &mut u32) -> Option<u32> {
+    if *min_so_far < accum {
+        return None; // Prune branch
+    }
+
+    if factory.geode_robots >= n {
+        *min_so_far = std::cmp::min(accum, *min_so_far);
+        return Some(accum);
+    }
+
+    // It might make sense to always build Clay, then Obsidian, then Geode, then Ore?
+    // For now, try to build Geode first, then Obsidian, then Clay, then Ore.
+    // Actually, we'll try building any of the robots we still need to build, if possible.
+    let mut possibilities = vec![];
+    
+    factory.produce();
+
+    let no_robot = time_to_nth_geodebot(plan, factory.clone(), blueprint, n, accum + 1, min_so_far);
+    if let Some(time_no_robot) = no_robot {
+        possibilities.push(time_no_robot);
+    } 
+
+    for robotype in Robot::iter().rev() {
+        if plan[&robotype] > factory.robot_quantity(robotype) && factory.can_build(blueprint, robotype) {
+            let mut next_fac = factory.clone();
+            next_fac.start_build(blueprint, robotype);
+            let next = time_to_nth_geodebot(plan, next_fac, blueprint, n, accum + 1, min_so_far);
+            if let Some(time_next) = next {
+                possibilities.push(time_next);
+            }
+        }
+    }
+
+    return possibilities.into_iter().min();
+}
+
+fn min_time_to_first_geodebot(factory: Factory, blueprint: &Blueprint, time_limit: u32) -> Option<u32> {
+    use Robot::*;
+    // Make all plans where the sum of robots is less than the time limit
+    let mut plans = vec![];
+    for orebots in 1..4 {
+        for claybots in 1..6 {
+            for obsbots in 1..6 {
+                let plan = Plan::from([
+                    (Ore, orebots),
+                    (Clay, claybots),
+                    (Obsidian, obsbots),
+                    (Geode, 1)
+                ]);
+                plans.push(plan);
+            }
+        }
+    }
+
+    let mut min_so_far = time_limit;
+    let times: Vec<u32> = plans.into_iter().filter_map(|plan| time_to_nth_geodebot(&plan, factory.clone(), blueprint, 1, 0 /* accum */, &mut min_so_far)).collect();
+    let min_time = times.iter().min();
+    return min_time.copied();
 }
 
 #[cfg(test)]
@@ -434,5 +511,55 @@ mod tests {
         assert_eq![default.clay, 41];
         assert_eq![default.obsidian, 8];
         assert_eq![default.geodes, 9];
+    }
+
+    #[test]
+    fn first_geode_test() {
+        use Robot::*;
+        let blueprint_1 = Blueprint::new("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
+        let fac = Factory::new();
+        let plan = Plan::from([
+            (Ore, 1),
+            (Clay, 1),
+            (Obsidian, 1),
+            (Geode, 1)
+        ]);
+
+        let mut min = 26;
+        assert_eq!(time_to_nth_geodebot(&plan, fac, &blueprint_1, 1, 0, &mut min), Some(26));
+        min = 25;
+        assert_eq!(time_to_nth_geodebot(&plan, fac, &blueprint_1, 1, 0, &mut min), None);
+
+        let fac = Factory::new();
+        let plan = Plan::from([
+            (Ore, 1),
+            (Clay, 2),
+            (Obsidian, 1),
+            (Geode, 1)
+        ]);
+
+        min = 25;
+        assert_eq!(time_to_nth_geodebot(&plan, fac, &blueprint_1, 1, 0, &mut min), Some(20));
+
+        let min_to_first_geode = min_time_to_first_geodebot(Factory::new(), &blueprint_1, 24).unwrap();
+        assert!(min_to_first_geode < 20);
+        assert_eq!(min_to_first_geode, 18);
+    }
+
+    #[test]
+    fn first_geode_on_inputs() {
+        let sample_blueprints = parse("sample.txt");
+        
+        assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[0], 24).unwrap() < 24);
+        assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[1], 24).unwrap() < 24);
+
+        let input_blueprints = parse("input.txt");
+        for blueprint in input_blueprints {
+            let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
+            if result.is_none() {
+                println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
+            }
+            assert!(result.unwrap() < 25);
+        }
     }
 }
