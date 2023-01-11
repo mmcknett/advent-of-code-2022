@@ -36,7 +36,7 @@ fn quality_level(blueprint: &Blueprint) -> u32 {
     create = "{ SizedCache::with_size(1000) }",
     convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, minutes_remaining) }"#
 )]
-fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u32, mut best_so_far: &mut u32) -> u32 {
+fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u32, best_so_far: &mut u32) -> u32 {
     if minutes_remaining == 0 {
         // if factory.geodes > 0 {
         //     println!("{:?}", factory);
@@ -45,7 +45,7 @@ fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u3
         return factory.geodes;
     }
 
-    if *best_so_far > factory.geodes + production_bound(blueprint, minutes_remaining) {
+    if *best_so_far > factory.geodes + production_bound(blueprint, &factory, minutes_remaining) {
         return 0; // Prune this branch; it's not good enough.
     }
 
@@ -87,8 +87,8 @@ struct Blueprint {
 
 impl Blueprint {
     fn new(input: &str) -> Self {
-        const fmt: &str = "Blueprint {d}: Each ore robot costs {d} ore. Each clay robot costs {d} ore. Each obsidian robot costs {d} ore and {d} clay. Each geode robot costs {d} ore and {d} obsidian.";
-        let parsed = scan_fmt![input, &fmt, u32, u32, u32, u32, u32, u32, u32].unwrap();
+        const FMT: &str = "Blueprint {d}: Each ore robot costs {d} ore. Each clay robot costs {d} ore. Each obsidian robot costs {d} ore and {d} clay. Each geode robot costs {d} ore and {d} obsidian.";
+        let parsed = scan_fmt![input, &FMT, u32, u32, u32, u32, u32, u32, u32].unwrap();
 
         Self {
             id: parsed.0,
@@ -111,9 +111,11 @@ impl Blueprint {
 #[cached(
     type = "SizedCache<String, u32>",
     create = "{ SizedCache::with_size(30*24) }",
-    convert = r#"{ format!("{}{}", blueprint.id, time_remaining) }"#
+    convert = r#"{ format!("{}{:?}{}", blueprint.id, _factory, time_remaining) }"#
 )]
-fn production_bound(blueprint: &Blueprint, time_remaining: u32) -> u32 {
+fn production_bound(blueprint: &Blueprint, _factory: &Factory, time_remaining: u32) -> u32 {
+
+
     // Pretend the max ore we can produce is what we'd produce if we spent all our ore on ore robots.
     // If time_remaining is 16 and an ore robot costs 4 ore, starting w/ 1 robot...
     // 123456789012       3456   
@@ -245,11 +247,12 @@ mod tests {
     fn upper_bound_test() {
         // The sample for blueprint 1 should state its upper bound is *at least* 9 geodes in 24 minutes, since that's the true max it can produce.
         let blueprint_1 = Blueprint::new("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
-        assert![production_bound(&blueprint_1, 24) > 9];
+        let fac = Factory::new();
+        assert![production_bound(&blueprint_1, &fac, 24) > 9];
 
         // The sample for blueprint 1 should state its upper bound is *at least* 9 geodes in 24 minutes, since that's the true max it can produce.
         let blueprint_2 = Blueprint::new("Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.");
-        assert![production_bound(&blueprint_2, 24) > 12];
+        assert![production_bound(&blueprint_2, &fac, 24) > 12];
     }
 
     #[test]
