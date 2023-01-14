@@ -53,7 +53,7 @@ fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u3
         return factory.geodes;
     }
 
-    if *best_so_far > factory.geodes + production_bound(blueprint, &factory, minutes_remaining) {
+    if *best_so_far > production_bound(blueprint, &factory, minutes_remaining) {
         return 0; // Prune this branch; it's not good enough.
     }
 
