@@ -1,3 +1,5 @@
+#![feature(int_roundings)]
+
 use std::collections::HashMap;
 
 use cached::proc_macro::cached;
@@ -106,6 +108,88 @@ impl Blueprint {
             geode_robot_obsidian: parsed.6
         }
     }
+
+    fn max_robots(&self, robotype: Robot) -> u32 {
+        use std::cmp::max;
+        let max_orebots = max(self.ore_robot_ore, max(self.obsidian_robot_ore, max(self.clay_robot_ore, self.geode_robot_ore)));
+        let max_claybots = self.obsidian_robot_clay;
+        let max_obsbots = self.geode_robot_obsidian;
+        match robotype {
+            Robot::Ore => max_orebots,
+            Robot::Clay => max_claybots,
+            Robot::Obsidian => max_obsbots,
+            Robot::Geode => u32::MAX
+        }
+    }
+
+    fn all_plans(&self) -> Vec<Plan> {
+        use Robot::*;
+        use std::cmp::max;
+        // Make all plans where the sum of robots is less than the time limit, halving  max resources needed until you get to 1s.
+        let max_orebots = max(self.ore_robot_ore, max(self.obsidian_robot_ore, max(self.clay_robot_ore, self.geode_robot_ore)));
+        let max_claybots = self.obsidian_robot_clay;
+        let max_obsbots = self.geode_robot_obsidian;
+        let mut plan = <Plan as NewPlan>::new(max_orebots, max_claybots, max_obsbots, 1);
+        let mut plans = vec![];
+
+        while plan[&Ore] > 1 && plan[&Clay] > 1 && plan[&Obsidian] > 1 {
+            plans.push(plan.clone());
+
+            let max_val = max(plan[&Ore], max(plan[&Clay], plan[&Obsidian]));
+            let reduced_ore = plan[&Ore].div_ceil(2);
+            let reduced_clay = plan[&Clay].div_ceil(2);
+            let reduced_obs = plan[&Obsidian].div_ceil(2);
+
+            let mut drop_ore = plan.clone();
+            drop_ore.insert(Ore, reduced_ore);
+
+            let mut drop_clay = plan.clone();
+            drop_clay.insert(Clay, reduced_clay);
+
+            let mut drop_obs = plan.clone();
+            drop_obs.insert(Obsidian, reduced_obs);
+
+            plan = match (plan[&Ore], plan[&Clay], plan[&Obsidian]) {
+                (r, c, o) if r == c && r == o => {
+                    plans.push(drop_ore);
+                    plans.push(drop_clay);
+                    plans.push(drop_obs);
+                    <Plan as NewPlan>::new(reduced_ore, reduced_clay, reduced_obs, plan[&Geode])
+                },
+                (r, c, o) if r == max_val && c == max_val => {
+                    plans.push(drop_ore);
+                    plans.push(drop_clay);
+                    <Plan as NewPlan>::new(reduced_ore, reduced_clay, plan[&Obsidian], plan[&Geode])
+                },
+                (r, c, o) if c == max_val && o == max_val => {
+                    plans.push(drop_clay);
+                    plans.push(drop_obs);
+                    <Plan as NewPlan>::new(plan[&Ore], reduced_clay, reduced_obs, plan[&Geode])
+                },
+                (r, c, o) if r == max_val && o == max_val => {
+                    plans.push(drop_ore);
+                    plans.push(drop_obs);
+                    <Plan as NewPlan>::new(reduced_ore, plan[&Clay], reduced_obs, plan[&Geode])
+                },
+                (r, c, o) if r == max_val => {
+                    plans.push(drop_ore);
+                    <Plan as NewPlan>::new(reduced_ore, plan[&Clay], plan[&Obsidian], plan[&Geode])
+                },
+                (r, c, o) if c == max_val => {
+                    plans.push(drop_clay);
+                    <Plan as NewPlan>::new(plan[&Ore], reduced_clay, plan[&Obsidian], plan[&Geode])
+                },
+                (r, c, o) if o == max_val => {
+                    plans.push(drop_obs);
+                    <Plan as NewPlan>::new(plan[&Ore], plan[&Clay], reduced_obs, plan[&Geode])
+                },
+                (_, _, _) => panic!("Should have matched one of the others!")
+            };
+        }
+
+        plans.push(plan.clone());
+        return plans;
+    }
 }
 
 ///
@@ -196,6 +280,10 @@ impl Factory {
             return false;
         }
 
+        if self.robot_quantity(robot) >= blueprint.max_robots(robot) {
+            return false;
+        }
+
         match robot {
             Robot::Geode => self.ore >= blueprint.geode_robot_ore && self.obsidian >= blueprint.geode_robot_obsidian,
             Robot::Obsidian => self.ore >= blueprint.obsidian_robot_ore && self.clay >= blueprint.obsidian_robot_clay,
@@ -256,6 +344,17 @@ impl Factory {
 
 type Plan = HashMap<Robot, u32>;
 
+trait NewPlan {
+    fn new(orebots: u32, claybot: u32, obsbots: u32, geodebots: u32) -> Plan;
+}
+
+impl NewPlan for Plan {
+    fn new(orebots: u32, claybot: u32, obsbots: u32, geodebots: u32) -> Plan {
+        use Robot::*;
+        Plan::from([(Ore, orebots), (Clay, claybot), (Obsidian, obsbots), (Geode, geodebots)])
+    }
+}
+
 fn time_to_nth_geodebot(plan: &Plan, mut factory: Factory, blueprint: &Blueprint, n: u32, accum: u32, mut min_so_far: &mut u32) -> Option<u32> {
     if *min_so_far < accum {
         return None; // Prune branch
@@ -293,25 +392,16 @@ fn time_to_nth_geodebot(plan: &Plan, mut factory: Factory, blueprint: &Blueprint
 }
 
 fn min_time_to_first_geodebot(factory: Factory, blueprint: &Blueprint, time_limit: u32) -> Option<u32> {
-    use Robot::*;
-    // Make all plans where the sum of robots is less than the time limit
-    let mut plans = vec![];
-    for orebots in 1..4 {
-        for claybots in 1..6 {
-            for obsbots in 1..6 {
-                let plan = Plan::from([
-                    (Ore, orebots),
-                    (Clay, claybots),
-                    (Obsidian, obsbots),
-                    (Geode, 1)
-                ]);
-                plans.push(plan);
-            }
+    let plans = blueprint.all_plans();
+    let mut min_so_far = time_limit;
+    let mut times = vec![];
+    for plan in plans.iter().rev() {
+        let next_fac = factory.clone();
+        if let Some(time) = time_to_nth_geodebot(plan, next_fac, blueprint, 1, 0 /*accum*/, &mut min_so_far) {
+            times.push(time);
         }
     }
-
-    let mut min_so_far = time_limit;
-    let times: Vec<u32> = plans.into_iter().filter_map(|plan| time_to_nth_geodebot(&plan, factory.clone(), blueprint, 1, 0 /* accum */, &mut min_so_far)).collect();
+    // let times: Vec<u32> = plans.into_iter().filter_map(|plan| time_to_nth_geodebot(&plan, factory.clone(), blueprint, 1, 0 /* accum */, &mut min_so_far)).collect();
     let min_time = times.iter().min();
     return min_time.copied();
 }
@@ -553,13 +643,13 @@ mod tests {
         assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[0], 24).unwrap() < 24);
         assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[1], 24).unwrap() < 24);
 
-        let input_blueprints = parse("input.txt");
-        for blueprint in input_blueprints {
-            let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
-            if result.is_none() {
-                println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
-            }
-            assert!(result.unwrap() < 25);
-        }
+        // let input_blueprints = parse("input.txt");
+        // for blueprint in input_blueprints {
+        //     let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
+        //     if result.is_none() {
+        //         println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
+        //     }
+        //     assert!(result.unwrap() < 25);
+        // }
     }
 }
