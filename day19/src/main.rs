@@ -39,11 +39,11 @@ fn quality_level(blueprint: &Blueprint) -> u32 {
     return max_geodes * blueprint.id;
 }
 
-#[cached(
-    type = "SizedCache<String, u32>",
-    create = "{ SizedCache::with_size(1000) }",
-    convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, minutes_remaining) }"#
-)]
+// #[cached(
+//     type = "SizedCache<String, u32>",
+//     create = "{ SizedCache::with_size(1000) }",
+//     convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, minutes_remaining) }"#
+// )]
 fn max_geodes(blueprint: &Blueprint, mut factory: Factory, minutes_remaining: u32, best_so_far: &mut u32) -> u32 {
     if minutes_remaining == 0 {
         // if factory.geodes > 0 {
@@ -198,12 +198,17 @@ impl Blueprint {
 /// For this upper bound, let's try assuming that we can build robots with the same pool of resources. Just calculate
 /// the maximum amount of resources producible of a given type and max out the robots that cost up to that amount.
 /// 
-#[cached(
-    type = "SizedCache<String, u32>",
-    create = "{ SizedCache::with_size(30*24) }",
-    convert = r#"{ format!("{}{:?}{}", blueprint.id, _factory, time_remaining) }"#
-)]
-fn production_bound(blueprint: &Blueprint, _factory: &Factory, time_remaining: u32) -> u32 {
+// #[cached(
+//     type = "SizedCache<String, u32>",
+//     create = "{ SizedCache::with_size(30*24) }",
+//     convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, time_remaining) }"#
+// )]
+fn production_bound(blueprint: &Blueprint, factory: &Factory, time_remaining: u32) -> u32 {
+    // Simple production bound: assume we can build a geode robot every minute remaining and add up all the geodes possible.
+    let geodes_if_one_bot_built_every_minute = time_remaining * (time_remaining + 1) / 2;
+    let possible_geodes = factory.geodes + factory.geode_robots * time_remaining + geodes_if_one_bot_built_every_minute;
+
+    return possible_geodes;
 
 
     // Pretend the max ore we can produce is what we'd produce if we spent all our ore on ore robots.
