@@ -1,5 +1,6 @@
 #![feature(int_roundings)]
 
+use core::time;
 use std::collections::HashMap;
 
 use cached::proc_macro::cached;
@@ -42,8 +43,8 @@ fn part2(blueprints: &Vec<Blueprint>) -> u32 {
 }
 
 fn max_geodes_for_blueprint(blueprint: &Blueprint) -> u32 {
-    let fac = Factory::new();
     const MINUTES: u32 = 32;
+    let fac = Factory::new(MINUTES);
 
     let mut best_so_far = 0;
     let max_geodes = max_geodes(blueprint, fac, MINUTES, &mut best_so_far);
@@ -52,8 +53,8 @@ fn max_geodes_for_blueprint(blueprint: &Blueprint) -> u32 {
 }
 
 fn quality_level(blueprint: &Blueprint) -> u32 {
-    let fac = Factory::new();
     const MINUTES: u32 = 24;
+    let fac = Factory::new(MINUTES);
 
     let mut best_so_far = 0;
     let max_geodes = max_geodes(blueprint, fac, MINUTES, &mut best_so_far);
@@ -112,7 +113,10 @@ struct Blueprint {
     obsidian_robot_ore: u32,
     obsidian_robot_clay: u32,
     geode_robot_ore: u32,
-    geode_robot_obsidian: u32
+    geode_robot_obsidian: u32,
+    first_clay_time: u32,
+    first_obs_time: u32,
+    first_geode_time: u32
 }
 
 impl Blueprint {
@@ -120,15 +124,32 @@ impl Blueprint {
         const FMT: &str = "Blueprint {d}: Each ore robot costs {d} ore. Each clay robot costs {d} ore. Each obsidian robot costs {d} ore and {d} clay. Each geode robot costs {d} ore and {d} obsidian.";
         let parsed = scan_fmt![input, &FMT, u32, u32, u32, u32, u32, u32, u32].unwrap();
 
-        Self {
+        let mut res = Self {
             id: parsed.0,
             ore_robot_ore: parsed.1,
             clay_robot_ore: parsed.2,
             obsidian_robot_ore: parsed.3,
             obsidian_robot_clay: parsed.4,
             geode_robot_ore: parsed.5,
-            geode_robot_obsidian: parsed.6
-        }
+            geode_robot_obsidian: parsed.6,
+            first_clay_time: 0,
+            first_obs_time: 0,
+            first_geode_time: 0
+        };
+
+        // Assume a clay robot is created once per minute as soon as we can create them.
+        // Used the quadratic formula to solve `blueprint.obsidian_robot_clay = t(t+1)/2`
+        // obsidian_robot_clay = (x^2+x)/2
+        // 2*o = x^2 + x; 0 = x^2 + x - 2*o
+        // x = -1 +- sqrt(1 + 8*o) / 2
+        res.first_clay_time = 2 +
+            ((((1 + 8 * res.clay_robot_ore) as f64).sqrt() - 1f64) / 2f64) as u32;
+        res.first_obs_time = res.first_clay_time + 1 +
+            ((((1 + 8 * res.obsidian_robot_clay) as f64).sqrt() - 1f64) / 2f64) as u32;
+        res.first_geode_time = res.first_obs_time + 1 +
+            ((((1 + 8 * res.geode_robot_obsidian) as f64).sqrt() - 1f64) / 2f64) as u32;
+
+        return res;
     }
 
     fn max_robots(&self, robotype: Robot) -> u32 {
@@ -226,8 +247,15 @@ impl Blueprint {
 //     convert = r#"{ format!("{}{:?}{}", blueprint.id, factory, time_remaining) }"#
 // )]
 fn production_bound(blueprint: &Blueprint, factory: &Factory, time_remaining: u32) -> u32 {
-    // Simple production bound: assume we can build a geode robot every minute remaining and add up all the geodes possible.
-    let geode_production_time = time_remaining;
+    let geode_production_time = std::cmp::min(factory.original_time - blueprint.first_geode_time, time_remaining);
+    let time_to_next_geodebot = if factory.can_build(blueprint, Robot::Geode) || factory.geode_robots > 0 { 1 } else {
+        time_remaining.saturating_sub(
+            std::cmp::min(
+                blueprint.geode_robot_ore - factory.ore - factory.ore_robots,
+                blueprint.geode_robot_obsidian - factory.obsidian - factory.obsidian_robots
+            )
+        )
+    };
     let geodes_if_one_bot_built_every_minute = geode_production_time * (geode_production_time + 1) / 2;
     let possible_geodes = factory.geodes + factory.geode_robots * geode_production_time + geodes_if_one_bot_built_every_minute;
 
@@ -285,11 +313,12 @@ struct Factory {
     clay: u32,
     obsidian: u32,
     geodes: u32,
-    robot_in_progress: Option<Robot>
+    robot_in_progress: Option<Robot>,
+    original_time: u32
 }
 
 impl Factory {
-    fn new() -> Self {
+    fn new(original_time: u32) -> Self {
         Self {
             ore_robots: 1,
             clay_robots: 0,
@@ -299,7 +328,8 @@ impl Factory {
             clay: 0,
             obsidian: 0,
             geodes: 0,
-            robot_in_progress: None
+            robot_in_progress: None,
+            original_time
         }
     }
 
@@ -442,7 +472,7 @@ mod tests {
     fn upper_bound_test() {
         // The sample for blueprint 1 should state its upper bound is *at least* 9 geodes in 24 minutes, since that's the true max it can produce.
         let blueprint_1 = Blueprint::new("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
-        let fac = Factory::new();
+        let fac = Factory::new(24);
         assert![production_bound(&blueprint_1, &fac, 24) > 9];
 
         // The sample for blueprint 1 should state its upper bound is *at least* 9 geodes in 24 minutes, since that's the true max it can produce.
@@ -452,7 +482,7 @@ mod tests {
 
     #[test]
     fn factory() {
-        let mut default = Factory::new();
+        let mut default = Factory::new(24);
         default.produce();
         default.produce();
         default.produce();
@@ -479,7 +509,8 @@ mod tests {
             clay: 0,
             obsidian: 0,
             geodes: 0,
-            robot_in_progress: None
+            robot_in_progress: None,
+            original_time: 24
         };
         default.produce();
         default.produce();
@@ -498,7 +529,7 @@ mod tests {
     #[test]
     fn factory_production_sample() {
         let blueprint = Blueprint::new("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
-        let mut default = Factory::new();
+        let mut default = Factory::new(24);
 
         // Minute 1
         default.produce();
@@ -604,7 +635,8 @@ mod tests {
             clay: 25,
             obsidian: 7,
             geodes: 2,
-            robot_in_progress: None
+            robot_in_progress: None,
+            original_time: 24
         };
 
         // Minute 21
@@ -635,7 +667,7 @@ mod tests {
     fn first_geode_test() {
         use Robot::*;
         let blueprint_1 = Blueprint::new("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.");
-        let fac = Factory::new();
+        let fac = Factory::new(24);
         let plan = Plan::from([
             (Ore, 1),
             (Clay, 1),
@@ -648,7 +680,7 @@ mod tests {
         min = 25;
         assert_eq!(time_to_nth_geodebot(&plan, fac, &blueprint_1, 1, 0, &mut min), None);
 
-        let fac = Factory::new();
+        let fac = Factory::new(24);
         let plan = Plan::from([
             (Ore, 1),
             (Clay, 2),
@@ -659,7 +691,7 @@ mod tests {
         min = 25;
         assert_eq!(time_to_nth_geodebot(&plan, fac, &blueprint_1, 1, 0, &mut min), Some(20));
 
-        let min_to_first_geode = min_time_to_first_geodebot(Factory::new(), &blueprint_1, 24).unwrap();
+        let min_to_first_geode = min_time_to_first_geodebot(Factory::new(24), &blueprint_1, 24).unwrap();
         assert!(min_to_first_geode < 20);
         assert_eq!(min_to_first_geode, 18);
     }
@@ -668,12 +700,12 @@ mod tests {
     // fn first_geode_on_inputs() {
     //     let sample_blueprints = parse("sample.txt");
         
-    //     assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[0], 24).unwrap() < 24);
-    //     // assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[1], 24).unwrap() < 24);
+    //     assert!(min_time_to_first_geodebot(Factory::new(24), &sample_blueprints[0], 24).unwrap() < 24);
+    //     // assert!(min_time_to_first_geodebot(Factory::new(24), &sample_blueprints[1], 24).unwrap() < 24);
 
     //     // let input_blueprints = parse("input.txt");
     //     // for blueprint in input_blueprints {
-    //     //     let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
+    //     //     let result = min_time_to_first_geodebot(Factory::new(24), &blueprint, 24);
     //     //     if result.is_none() {
     //     //         println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
     //     //     }
@@ -697,5 +729,11 @@ mod tests {
     // fn part1_input() {
     //     let blueprints = parse("input.txt");
     //     assert_eq!(part1(&blueprints), 1349);
+    // }
+
+    // #[test]
+    // fn part2_input() {
+    //     let blueprints = parse("input.txt");
+    //     assert_eq!(part2(&blueprints), 21840);
     // }
 }
