@@ -13,9 +13,11 @@ fn main() {
 
     // Part 1
     let res = evaluate(make_expr("root", &optree));
-    println!("root yells {}", res);
+    println!("root yells {}", res.unwrap());
 
     // Part 2
+    let res = find_x(&optree);
+    println!("I should yell {}", res);
 }
 
 fn parse_lines<'a>(lineiter: impl Iterator<Item = &'a str>) -> Optree {
@@ -29,15 +31,11 @@ fn parse_line(line: &str) -> (Monkey, Op) {
     return (monkey.to_string(), op.parse().unwrap());
 }
 
-fn evaluate(expresssion: Expr) -> u64 {
-    use Expr::*;
-    match expresssion {
-        Val(val) => val,
-        Mul(m1, m2) => evaluate(*m1) * evaluate(*m2),
-        Div(m1, m2) => evaluate(*m1) / evaluate(*m2),
-        Add(m1, m2) => evaluate(*m1) + evaluate(*m2),
-        Sub(m1, m2) => evaluate(*m1) - evaluate(*m2),
-        X => panic!("Can't evaluate X!"),
+fn evaluate(expression: Expr) -> Option<u64> {
+    let reduced = reduce(&expression);
+    match reduced {
+        Expr::Val(val) => Some(val),
+        _ => None
     }
 }
 
@@ -48,6 +46,155 @@ fn make_expr(symbol: &str, optree: &Optree) -> Expr {
         Op::Div(m1, m2) => Expr::Div(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree))),
         Op::Add(m1, m2) => Expr::Add(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree))),
         Op::Sub(m1, m2) => Expr::Sub(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree)))
+    }
+}
+
+fn is_val(expression: &Expr) -> bool {
+    match expression {
+        Expr::Val(_) => true,
+        _ => false
+    }
+}
+
+fn is_x(expression: &Expr) -> bool {
+    match expression {
+        Expr::X => true,
+        _ => false
+    }
+}
+
+fn reduce(expression: &Expr) -> Expr {
+    use Expr::*;
+    if let Val(v) = expression { return Val(*v); }
+    if let X = expression { return X;}
+
+    let (lhs, rhs) = match expression {
+        Mul(l, r) => (l, r),
+        Div(l, r) => (l, r),
+        Add(l, r) => (l, r),
+        Sub(l, r) => (l, r),
+        _ => panic!("Impossible")
+    };
+    let lhs = reduce(lhs);
+    let rhs = reduce(rhs);
+
+    match (lhs, rhs) {
+        (Val(l), Val(r)) => match expression {
+            Mul(_, _) => Val(l * r),
+            Div(_, _) => Val(l / r),
+            Add(_, _) => Val(l + r),
+            Sub(_, _) => Val(l - r),
+            _ => panic!("Not possible")
+        },
+        (Val(l), expr_r) => match expression {
+            Mul(_, _) => Mul(Box::new(Val(l)), Box::new(expr_r)),
+            Div(_, _) => Div(Box::new(Val(l)), Box::new(expr_r)),
+            Add(_, _) => Add(Box::new(Val(l)), Box::new(expr_r)),
+            Sub(_, _) => Sub(Box::new(Val(l)), Box::new(expr_r)),
+            _ => panic!("Not possible")
+        },
+        (expr_l, Val(r)) => match expression {
+            Mul(_, _) => Mul(Box::new(expr_l), Box::new(Val(r))),
+            Div(_, _) => Div(Box::new(expr_l), Box::new(Val(r))),
+            Add(_, _) => Add(Box::new(expr_l), Box::new(Val(r))),
+            Sub(_, _) => Sub(Box::new(expr_l), Box::new(Val(r))),
+            _ => panic!("Not possible")
+        },
+        _ => panic!("can't reduce this one!")
+    }
+}
+
+fn find_x(optree: &Optree) -> u64 {
+    if let Op::Add(m1, m2) = &optree["root"] {
+        let lhs_expr = reduce(&make_expr_p2(&m1, optree));
+        let rhs_expr = reduce(&make_expr_p2(&m2, optree));
+
+        if is_val(&lhs_expr) {
+            let non_x_part = balance(rhs_expr, lhs_expr);
+            return evaluate(non_x_part).unwrap();
+        } else if is_val(&rhs_expr) {
+            let non_x_part = balance(lhs_expr, rhs_expr);
+            return evaluate(non_x_part).unwrap();
+        } else {
+            panic!("One of the sides has to reduce!");
+        }
+    } else {
+        panic!("We expect root to be a + op.");
+    }
+}
+
+fn balance(contains_x: Expr, receives_balance: Expr) -> Expr {
+    // Dig down the left hand expression tree until you find X.
+    // This function expects a reduced Expr in its first param,
+    // and a Val(_) expr in its second.
+    if !is_val(&receives_balance) {
+        panic!("The second param should be a Expr::Val(_)");
+    }
+
+    let mut result = receives_balance;
+    let mut contains_x = contains_x;
+
+    use Expr::*;
+    while !is_x(&contains_x) {
+        match contains_x {
+            Mul(l, r) if is_val(&l) => {
+                // e.g.: 3 * x = 5 --> x = 5 / 3
+                contains_x = *r;
+                result = Div(Box::new(result), l);
+            },
+            Mul(l, r) if is_val(&r) => {
+                // e.g.: x * 3 = 5 --> x = 5 / 3
+                contains_x = *l;
+                result = Div(Box::new(result), r);
+            },
+            Div(l, r) if is_val(&l) => {
+                // e.g.: 3 / x = 5 --> x = 3 / 5  (cross-multiply)
+                contains_x = *r;
+                result = Div(l, Box::new(result));
+            },
+            Div(l, r) if is_val(&r) => {
+                // e.g.: x / 3 = 5 --> x = 5 * 3
+                contains_x = *l;
+                result = Mul(Box::new(result), r);
+            },
+            Add(l, r) if is_val(&l) => {
+                // e.g.: 3 + x = 5 --> x = 5 - 3
+                contains_x = *r;
+                result = Sub(Box::new(result), l);
+            },
+            Add(l, r) if is_val(&r) => {
+                // e.g.: x + 3 = 5 --> x = 5 - 3
+                contains_x = *l;
+                result = Sub(Box::new(result), r);
+            },
+            Sub(l, r) if is_val(&l) => {
+                // e.g.: 3 - x = 5 --> x = 3 - 5
+                contains_x = *r;
+                result = Sub(l, Box::new(result));
+            },
+            Sub(l, r) if is_val(&r) => {
+                // e.g.: x - 3 = 5 --> x = 5 + 3
+                contains_x = *l;
+                result = Add(Box::new(result), r);
+            },
+            _ => panic!("unexpected expression on the x side!")
+        }
+    }
+
+    return result;
+}
+
+fn make_expr_p2(symbol: &str, optree: &Optree) -> Expr {
+    if symbol == "humn" {
+        return Expr::X;
+    }
+
+    match &optree[symbol] {
+        Op::Val(val) => Expr::Val(*val),
+        Op::Mul(m1, m2) => Expr::Mul(Box::new(make_expr_p2(&m1, optree)), Box::new(make_expr_p2(&m2, optree))),
+        Op::Div(m1, m2) => Expr::Div(Box::new(make_expr_p2(&m1, optree)), Box::new(make_expr_p2(&m2, optree))),
+        Op::Add(m1, m2) => Expr::Add(Box::new(make_expr_p2(&m1, optree)), Box::new(make_expr_p2(&m2, optree))),
+        Op::Sub(m1, m2) => Expr::Sub(Box::new(make_expr_p2(&m1, optree)), Box::new(make_expr_p2(&m2, optree)))
     }
 }
 
@@ -142,7 +289,7 @@ mod tests {
         let input = std::fs::read_to_string("sample.txt").unwrap();
         let optree = parse_lines(input.split("\n"));
 
-        assert_eq![evaluate(make_expr("root", &optree)), 152];
+        assert_eq![evaluate(make_expr("root", &optree)).unwrap(), 152];
     }
 
     #[test]
@@ -150,6 +297,22 @@ mod tests {
         let input = std::fs::read_to_string("input.txt").unwrap();
         let optree = parse_lines(input.split("\n"));
 
-        assert_eq![evaluate(make_expr("root", &optree)), 56490240862410];
+        assert_eq![evaluate(make_expr("root", &optree)).unwrap(), 56490240862410];
+    }
+
+    #[test]
+    fn part2_sample() {
+        let input = std::fs::read_to_string("sample.txt").unwrap();
+        let optree = parse_lines(input.split("\n"));
+
+        assert_eq![find_x(&optree), 301];
+    }
+
+    #[test]
+    fn part2_input() {
+        let input = std::fs::read_to_string("input.txt").unwrap();
+        let optree = parse_lines(input.split("\n"));
+
+        assert_eq![find_x(&optree), 3403989691757];
     }
 }
