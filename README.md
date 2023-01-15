@@ -17,9 +17,13 @@ I spent most of my time figuring out how to work with Rust `Rc` (ref counted poi
 ## Day 19
 [Day 19 prompt](https://adventofcode.com/2022/day/19)
 
-(We were preparing for our two-week international trip, so I didn't have time to immediately finish this one.) I started with a naive, aggressively-exponential algorithm started for part 1. Same issue as day 16; caching params (with the `cached` library!) isn't sufficient to shortcut the processing. This one seems suited to dynamic programming, but I don't know exactly what intermediate values to build up yet.
+(We were preparing for our two-week international trip, so I didn't have time to immediately finish this one.) I started with a naive, aggressively-exponential algorithm for part 1. Same issue as day 16; caching params (with the `cached` library!) isn't sufficient to shortcut the processing. This one seems suited to dynamic programming, but I don't know exactly what intermediate values to build up yet.
 
-TODO: Finish part 1 & 2 writeup
+Rather than trying to build up intermediate values, I went ahead with branch-and-bound like Day 16. I really struggled to figure out how to do the bound, because it's not easy to come up with a heuristic for the max possible number of geodes. I couldn't come up with a better one than "add the geodes you have to the ones that will be produced by geode-cracking robots you have now, plus however many more you'll have assuming you can build one of those robots every minute". This just doesn't narrow it down very much. But, it was enough, and that method finished while I was still trying to optimize the performance.
+
+I'll move on, but...
+
+TODO: Improve the performance of Day 19! It takes a few minutes.
 
 ## Day 18
 [Day 18 prompt](https://adventofcode.com/2022/day/18)
