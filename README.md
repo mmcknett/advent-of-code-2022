@@ -5,6 +5,11 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 21
+[Day 21 prompt](https://adventofcode.com/2022/day/21)
+
+This one was fun. Basically, write an arithmetic expression parser. For Part 2 I had to switch to parsing the input into an expression tree so that I could implement algebra to find X. This was good practice for making boxed recursive enum types. I have a feeling my functions are overly verbose and that there are probably some nifty Rust pattern-matching ways to handle some of the tasks here. I considered trying out the unstable [box patterns](https://doc.rust-lang.org/beta/unstable-book/language-features/box-patterns.html) feature, but I was able to accomplish what I needed with `if` match expressions. Still, I'm sure there must be some way to make the rules for `reduce` and `balance` less verbose.
+
 ## Day 20
 [Day 20 prompt](https://adventofcode.com/2022/day/20)
 
