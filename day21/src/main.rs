@@ -12,7 +12,7 @@ fn main() {
     let optree = parse_lines(input.split("\n"));
 
     // Part 1
-    let res = evaluate("root", &optree);
+    let res = evaluate(make_expr("root", &optree));
     println!("root yells {}", res);
 
     // Part 2
@@ -29,14 +29,25 @@ fn parse_line(line: &str) -> (Monkey, Op) {
     return (monkey.to_string(), op.parse().unwrap());
 }
 
-fn evaluate(symbol: &str, optree: &Optree) -> u64 {
-    use Op::*;
+fn evaluate(expresssion: Expr) -> u64 {
+    use Expr::*;
+    match expresssion {
+        Val(val) => val,
+        Mul(m1, m2) => evaluate(*m1) * evaluate(*m2),
+        Div(m1, m2) => evaluate(*m1) / evaluate(*m2),
+        Add(m1, m2) => evaluate(*m1) + evaluate(*m2),
+        Sub(m1, m2) => evaluate(*m1) - evaluate(*m2),
+        X => panic!("Can't evaluate X!"),
+    }
+}
+
+fn make_expr(symbol: &str, optree: &Optree) -> Expr {
     match &optree[symbol] {
-        Val(val) => *val,
-        Mul(m1, m2) => evaluate(&m1, optree) * evaluate(&m2, optree),
-        Div(m1, m2) => evaluate(&m1, optree) / evaluate(&m2, optree),
-        Add(m1, m2) => evaluate(&m1, optree) + evaluate(&m2, optree),
-        Sub(m1, m2) => evaluate(&m1, optree) - evaluate(&m2, optree),
+        Op::Val(val) => Expr::Val(*val),
+        Op::Mul(m1, m2) => Expr::Mul(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree))),
+        Op::Div(m1, m2) => Expr::Div(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree))),
+        Op::Add(m1, m2) => Expr::Add(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree))),
+        Op::Sub(m1, m2) => Expr::Sub(Box::new(make_expr(&m1, optree)), Box::new(make_expr(&m2, optree)))
     }
 }
 
@@ -48,7 +59,16 @@ enum Op {
     Mul(Monkey, Monkey),
     Div(Monkey, Monkey),
     Add(Monkey, Monkey),
-    Sub(Monkey, Monkey)
+    Sub(Monkey, Monkey),
+}
+
+enum Expr {
+    Val(u64),
+    Mul(Box<Expr>, Box<Expr>),
+    Div(Box<Expr>, Box<Expr>),
+    Add(Box<Expr>, Box<Expr>),
+    Sub(Box<Expr>, Box<Expr>),
+    X
 }
 
 #[derive(Debug)]
@@ -115,5 +135,21 @@ mod tests {
         assert_eq!(format!("{:?}", optree["root"]), "pppw + sjmn");
         assert_eq!(format!("{:?}", optree["sjmn"]), "drzm * dbpl");
         assert_eq!(format!("{:?}", optree["ljgn"]), "2");
+    }
+
+    #[test]
+    fn part1_sample() {
+        let input = std::fs::read_to_string("sample.txt").unwrap();
+        let optree = parse_lines(input.split("\n"));
+
+        assert_eq![evaluate(make_expr("root", &optree)), 152];
+    }
+
+    #[test]
+    fn part1_input() {
+        let input = std::fs::read_to_string("input.txt").unwrap();
+        let optree = parse_lines(input.split("\n"));
+
+        assert_eq![evaluate(make_expr("root", &optree)), 56490240862410];
     }
 }
