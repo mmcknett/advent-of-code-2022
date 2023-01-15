@@ -9,9 +9,11 @@ fn main() {
     let input = std::fs::read_to_string(&path).expect(&format!["Couldn't find file \"{path}\""]);
 
     // Parse input
-
+    let optree = parse_lines(input.split("\n"));
 
     // Part 1
+    let res = evaluate("root", &optree);
+    println!("root yells {}", res);
 
     // Part 2
 }
@@ -25,6 +27,17 @@ fn parse_line(line: &str) -> (Monkey, Op) {
     let monkey = iter.next().unwrap();
     let op = iter.next().unwrap();
     return (monkey.to_string(), op.parse().unwrap());
+}
+
+fn evaluate(symbol: &str, optree: &Optree) -> u64 {
+    use Op::*;
+    match &optree[symbol] {
+        Val(val) => *val,
+        Mul(m1, m2) => evaluate(&m1, optree) * evaluate(&m2, optree),
+        Div(m1, m2) => evaluate(&m1, optree) / evaluate(&m2, optree),
+        Add(m1, m2) => evaluate(&m1, optree) + evaluate(&m2, optree),
+        Sub(m1, m2) => evaluate(&m1, optree) - evaluate(&m2, optree),
+    }
 }
 
 type Monkey = String;
