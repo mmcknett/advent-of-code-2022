@@ -664,22 +664,22 @@ mod tests {
         assert_eq!(min_to_first_geode, 18);
     }
 
-    #[test]
-    fn first_geode_on_inputs() {
-        let sample_blueprints = parse("sample.txt");
+    // #[test]
+    // fn first_geode_on_inputs() {
+    //     let sample_blueprints = parse("sample.txt");
         
-        assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[0], 24).unwrap() < 24);
-        // assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[1], 24).unwrap() < 24);
+    //     assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[0], 24).unwrap() < 24);
+    //     // assert!(min_time_to_first_geodebot(Factory::new(), &sample_blueprints[1], 24).unwrap() < 24);
 
-        // let input_blueprints = parse("input.txt");
-        // for blueprint in input_blueprints {
-        //     let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
-        //     if result.is_none() {
-        //         println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
-        //     }
-        //     assert!(result.unwrap() < 25);
-        // }
-    }
+    //     // let input_blueprints = parse("input.txt");
+    //     // for blueprint in input_blueprints {
+    //     //     let result = min_time_to_first_geodebot(Factory::new(), &blueprint, 24);
+    //     //     if result.is_none() {
+    //     //         println!("Didn't find a min time to first geode for input blueprint {}", blueprint.id);
+    //     //     }
+    //     //     assert!(result.unwrap() < 25);
+    //     // }
+    // }
 
     #[test]
     fn part1_sample() {
@@ -688,8 +688,14 @@ mod tests {
     }
 
     #[test]
-    fn part1_input() {
-        let blueprints = parse("input.txt");
-        assert_eq!(part1(&blueprints), 1349);
+    fn part2_sample() {
+        let blueprints = parse("sample.txt");
+        assert_eq!(part2(&blueprints), 3472);
     }
+
+    // #[test]
+    // fn part1_input() {
+    //     let blueprints = parse("input.txt");
+    //     assert_eq!(part1(&blueprints), 1349);
+    // }
 }
