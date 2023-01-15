@@ -18,6 +18,8 @@ fn main() {
     println!("Part 1 -- Sum of quality levels: {quality_level_sum}");
 
     // Part 2
+    let maxes_product: u32 = part2(&blueprints);
+    println!("Part 2 -- Product of max geodes: {maxes_product}");
 }
 
 fn parse(path: &str) -> Vec<Blueprint> {
@@ -33,14 +35,29 @@ fn part1(blueprints: &Vec<Blueprint>) -> u32 {
     return quality_level_sum;
 }
 
-fn quality_level(blueprint: &Blueprint) -> u32 {
-    let fac = Factory::new();
+fn part2(blueprints: &Vec<Blueprint>) -> u32 {
+    let maxes: Vec<u32> = blueprints.iter().take(3).map(max_geodes_for_blueprint).collect();
+    let max_product: u32 = maxes.iter().product();
+    return max_product;
+}
 
-    const MINUTES: u32 = 24;
-    // const MINUTES: u32 = 19;
+fn max_geodes_for_blueprint(blueprint: &Blueprint) -> u32 {
+    let fac = Factory::new();
+    const MINUTES: u32 = 32;
+
     let mut best_so_far = 0;
     let max_geodes = max_geodes(blueprint, fac, MINUTES, &mut best_so_far);
-    println!("Max geodes for {}: {max_geodes}", blueprint.id);
+    println!("Max geodes  in {MINUTES} minutes for {}: {max_geodes}", blueprint.id);
+    return max_geodes;
+}
+
+fn quality_level(blueprint: &Blueprint) -> u32 {
+    let fac = Factory::new();
+    const MINUTES: u32 = 24;
+
+    let mut best_so_far = 0;
+    let max_geodes = max_geodes(blueprint, fac, MINUTES, &mut best_so_far);
+    println!("Max geodes in {MINUTES} minutes for {}: {max_geodes}", blueprint.id);
     return max_geodes * blueprint.id;
 }
 
@@ -210,8 +227,9 @@ impl Blueprint {
 // )]
 fn production_bound(blueprint: &Blueprint, factory: &Factory, time_remaining: u32) -> u32 {
     // Simple production bound: assume we can build a geode robot every minute remaining and add up all the geodes possible.
-    let geodes_if_one_bot_built_every_minute = time_remaining * (time_remaining + 1) / 2;
-    let possible_geodes = factory.geodes + factory.geode_robots * time_remaining + geodes_if_one_bot_built_every_minute;
+    let geode_production_time = time_remaining;
+    let geodes_if_one_bot_built_every_minute = geode_production_time * (geode_production_time + 1) / 2;
+    let possible_geodes = factory.geodes + factory.geode_robots * geode_production_time + geodes_if_one_bot_built_every_minute;
 
     return possible_geodes;
 
