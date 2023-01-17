@@ -9,3 +9,5 @@ edition = "2021"
 path = "../utils"
 
 [dependencies]
+grid = "0.9.0"
+pad = "0.1.6"
