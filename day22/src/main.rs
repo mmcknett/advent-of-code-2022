@@ -17,6 +17,13 @@ fn main() {
 
 
     // Part 2
+    // Find the corners where two edges of the cube meet. There must be at least two for a cube to be unfolded.
+    // Create a mapping for each grid location on the border of a ' ' to where that grid connects. Start with the
+    // corners, then connect each remaining edge moving outward from the corners.
+    // - Corners are where adjacent edges must be.
+    // - The remaining edges can be found by finding the next open edge around the map after the corners are skipped.
+    // - the rotation will change to be anti-normal (facing into the cube) from the edge, so I think there's no need to store
+    //   rotation information.
 }
 
 fn parse(path: &str) -> (Grid<char>, Vec<Inst>) {
@@ -94,7 +101,7 @@ impl Me {
     fn follow_instructions(&mut self, instructions: &Vec<Inst>) {
         use Inst::*;
         for i in instructions {
-            println!("Handling {:?}", i);
+            // println!("Handling {:?}", i);
             self.d = self.d.rotate(i);
 
             if let Move(dist) = i {
@@ -123,7 +130,7 @@ impl Me {
                         dist_rem -= 1;
                     }
                 }
-                println!("Arrived at {}, {}", self.r, self.c);
+                // println!("Arrived at {}, {}", self.r, self.c);
             }
         }
     }
