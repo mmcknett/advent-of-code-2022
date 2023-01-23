@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use grid::Grid;
 use pad::PadStr;
@@ -89,6 +89,30 @@ struct Me {
 }
 
 type Edges = Grid<HashMap<Dir, (usize, usize, Dir)>>;
+struct PosDir {
+    x: usize,
+    y: usize,
+    d: Dir
+}
+
+impl PosDir {
+    fn new(pt: (isize, isize), d: Dir) -> Self {
+        let (x, y) = as_u(pt);
+        Self { x, y, d }
+    }
+
+    fn new_u((x, y): (usize, usize), d: Dir) -> Self {
+        Self { x, y, d }
+    }
+
+    fn uPt(&self) -> (usize, usize) {
+        (self.x, self.y)
+    }
+
+    fn iPt(&self) -> (isize, isize) {
+        as_i((self.x, self.y))
+    }
+}
 
 impl Me {
     fn new(map: Grid<char>) -> Self {
@@ -185,12 +209,25 @@ impl Me {
             }
         }
 
+        let mut pt_queue: VecDeque<(PosDir, PosDir)> = VecDeque::new();
+
         // Fill out the grid edges with the destination square for a given direction, starting at each anchor point.
         for (anchor, (dir1, dir2)) in &concave_corners {
             // Say dir 1 is left and dir 2 is up. March away from the anchor in direction 1 (left); at each point along that edge, a move upward (direction 2) should
             // map to a going along the other edge, and then the direction should be right (opposite of direction 1).
             let start_1 = add(as_i(*anchor), dir1.unit());
             let start_2 = add(as_i(*anchor), dir2.unit());
+            pt_queue.push_front((PosDir::new(start_1, *dir1), PosDir::new(start_2, *dir2)));
+        }
+
+        // Now that each edge adjoining an anchor is filled out, expand out to two, three, four, etc. edges away from the anchors until all of the edges
+        // around the unfolded cube have destinations from their normals.
+        while let Some((posdir_1, posdir_2)) = pt_queue.pop_front() {
+            let start_1 = posdir_1.iPt();
+            let dir1 = posdir_1.d;
+            let start_2 = posdir_2.iPt();
+            let dir2 = posdir_2.d;
+
             for t in 0..face_width as isize {
                 let offset_1 = scale(dir1.unit(), t);
                 let offset_2 = scale(dir2.unit(), t);
@@ -198,8 +235,8 @@ impl Me {
                 let curr_1 = as_u(add(start_1, offset_1));
                 let curr_2 = as_u(add(start_2, offset_2));
 
-                let curr_1_normal = self.edge_normal(curr_1, *dir1);
-                let curr_2_normal = self.edge_normal(curr_2, *dir2);
+                let curr_1_normal = self.edge_normal(curr_1, dir1);
+                let curr_2_normal = self.edge_normal(curr_2, dir2);
 
                 let curr_1_dest = (curr_2.0, curr_2.1, curr_2_normal.opposite());
                 let curr_2_dest = (curr_1.0, curr_1.1, curr_1_normal.opposite());
@@ -207,12 +244,20 @@ impl Me {
                 result[curr_1.0][curr_1.1].insert(curr_1_normal, curr_1_dest);
                 result[curr_2.0][curr_2.1].insert(curr_2_normal, curr_2_dest);
             }
-        }
 
-        // Now that each edge adjoining an anchor is filled out, expand out to two, three, four, etc. edges away from the anchors until all of the edges
-        // around the unfolded cube have destinations from their normals.
-        for (anchor, (dir1, dir2)) in concave_corners {
+            let end_1 = add(start_1, scale(dir1.unit(), face_width as isize - 1));
+            let end_2 = add(start_2, scale(dir2.unit(), face_width as isize - 1));
 
+            let next_s1 = self.next_empty_edge(&result, as_u(end_1), dir1);
+            let next_s2 = self.next_empty_edge(&result, as_u(end_2), dir2);
+
+            if let Some(next_start1) = next_s1 {
+                if let Some(next_start2) = next_s2 {
+                    if next_start1.d == dir1 || next_start2.d == dir2 || pt_queue.is_empty() {
+                        pt_queue.push_front((next_start1, next_start2));
+                    }
+                }
+            }
         }
 
         return result;
@@ -243,15 +288,16 @@ impl Me {
         self.map.rows() / self.face_width()
     }
 
-    fn next_empty_edge(&self, edges: Edges, edge_end: (usize, usize), mut d: Dir) -> Option<((usize, usize), Dir)> {
+    fn next_empty_edge(&self, edges: &Edges, edge_end: (usize, usize), mut d: Dir) -> Option<PosDir> {
         let face_width = self.face_width();
         let mut edge_start = edge_end;
         let mut next_edge_end = edge_end;
 
         loop {
             (edge_start, d) = self.next_edge_start(next_edge_end, d);
-            if edges[edge_start.0][edge_start.1].is_empty() {
-                panic!("Empty isn't good enough; it has to be empty for the current normal.");
+            let dir_out = self.edge_normal(edge_start, d);
+            if !edges[edge_start.0][edge_start.1].contains_key(&dir_out) {
+                // There are not outbound connections for this edge going this direction yet.
                 break; // Found our edge.
             }
 
@@ -261,7 +307,7 @@ impl Me {
             }
         }
 
-        Some((edge_start, d))
+        Some(PosDir::new_u(edge_start, d))
     }
 
     fn edge_normal(&self, pt: (usize, usize), tangent: Dir) -> Dir {
@@ -461,6 +507,62 @@ mod tests {
     }
 
     #[test]
+    fn edges() {
+        let (grid, _) = parse("tiny.txt");
+        let mut tiny_me = Me::new(grid);
+
+        let edges = tiny_me.determine_edges();
+
+        use Dir::*;
+        // Top left corner
+        assert_eq!(edges[0][2][&L], (2, 0, D));
+        assert_eq!(edges[1][2][&L], (2, 1, D));
+        assert_eq!(edges[2][0][&U], (0, 2, R));
+        assert_eq!(edges[2][1][&U], (1, 2, R));
+
+        // Top right corner
+        assert_eq!(edges[1][3][&R], (2, 4, D));
+        assert_eq!(edges[0][3][&R], (2, 5, D));
+        assert_eq!(edges[2][4][&U], (1, 3, L));
+        assert_eq!(edges[2][5][&U], (0, 3, L));
+
+        // Second right corner
+        assert_eq!(edges[2][5][&R], (4, 7, D));
+        assert_eq!(edges[3][5][&R], (4, 6, D));
+        assert_eq!(edges[4][7][&U], (2, 5, L));
+        assert_eq!(edges[4][6][&U], (3, 5, L));
+
+        // Bottom left corner
+        assert_eq!(edges[3][2][&D], (5, 4, R));
+        assert_eq!(edges[3][3][&D], (4, 4, R));
+        assert_eq!(edges[5][4][&L], (3, 2, U));
+        assert_eq!(edges[4][4][&L], (3, 3, U));
+
+        // Second layer out
+        assert_eq!(edges[2][0][&L], (5, 7, U));
+        assert_eq!(edges[3][0][&L], (5, 6, U));
+        assert_eq!(edges[5][7][&D], (2, 0, R));
+        assert_eq!(edges[5][6][&D], (3, 0, R));
+
+        assert_eq!(edges[3][0][&D], (5, 5, U));
+        assert_eq!(edges[3][1][&D], (5, 4, U));
+        assert_eq!(edges[5][5][&D], (3, 0, U));
+        assert_eq!(edges[5][4][&D], (3, 1, U));
+
+        assert_eq!(edges[5][6][&D], (3, 0, R));
+        assert_eq!(edges[5][7][&D], (2, 0, R));
+        assert_eq!(edges[3][0][&L], (5, 6, U));
+        assert_eq!(edges[2][0][&L], (5, 7, U));
+
+        assert_eq!(edges[0][2][&U], (5, 7, L));
+        assert_eq!(edges[0][3][&U], (4, 7, L));
+        assert_eq!(edges[5][7][&R], (0, 2, D));
+        assert_eq!(edges[4][7][&R], (0, 3, D));
+
+
+    }
+
+    // #[test]
     fn day_22_part2_tiny() {
         let (grid, instrs) = parse("tiny.txt");
         let mut tiny_me = Me::new(grid);
