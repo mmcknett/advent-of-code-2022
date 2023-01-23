@@ -163,6 +163,53 @@ impl Me {
         }
     }
 
+    fn determine_wrapping_edges(&self) -> Edges {
+        let mut res = Edges::new(self.map.rows(), self.map.cols());
+        let face_width = self.face_width();
+
+        let start = (self.r, self.c);
+        let mut curr = start;
+        let mut dir = self.d;
+
+        loop {
+            let norm = self.edge_normal(curr, dir);
+            let mut end = curr;
+            for t in 0..face_width-1 {
+                end = as_u(add(as_i(curr), scale(dir.unit(), t as isize)));
+
+                use Dir::*;
+                let (mut r, mut c) = match norm {
+                    U => (self.map.rows() - 1, end.1),
+                    D => (0, end.1),
+                    L => (end.0, self.map.cols() - 1),
+                    R => (end.0 + t, 0)
+                };
+                while self.map[r][c] == ' ' {
+                    r = match norm {
+                        U => r - 1,
+                        D => r + 1,
+                        _ => r
+                    };
+                    c = match norm {
+                        L => c - 1,
+                        R => c + 1,
+                        _ => c
+                    }
+                }
+
+                res[end.0][end.1].insert(norm, (r, c, norm));
+                res[r][c].insert(norm.opposite(), (end.0, end.1, norm.opposite()));
+            }
+
+            (curr, dir) = self.next_edge_start(end, dir);
+            if curr == start && dir == self.d {
+                break;
+            }
+        }
+
+        return res;
+    }
+
     fn follow_instructions_cube(&mut self, instructions: &Vec<Inst>) {
         let edges = self.determine_edges();
 
@@ -507,9 +554,23 @@ mod tests {
     }
 
     #[test]
+    fn wrapping_edges() {
+        let (grid, _) = parse("tiny.txt");
+        let tiny_me = Me::new(grid);
+
+        let edges = tiny_me.determine_wrapping_edges();
+        
+        use Dir::*;
+        assert_eq!(edges[0][2][&L], (0, 3, L));
+        assert_eq!(edges[2][5][&R], (2, 0, R));
+        assert_eq!(edges[3][1][&D], (2, 1, D));
+        assert_eq!(edges[0][2][&U], (3, 2, U));
+    }
+
+    #[test]
     fn edges() {
         let (grid, _) = parse("tiny.txt");
-        let mut tiny_me = Me::new(grid);
+        let tiny_me = Me::new(grid);
 
         let edges = tiny_me.determine_edges();
 
