@@ -5,6 +5,30 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 22
+[Day 22 prompt](https://adventofcode.com/2022/day/22)
+
+Day 22 was a slog for me. It's a lot of bounds checking. The tricky part (and from Reddit it looks like it was tricky for others, too) was figuring out how to get the wrapping rules right for part 2, treating the input as a flattened cube. I drew a bunch of pictures and imagined the sides wrapping in 3D space a bunch, and ultimately came up with the general idea that you can find the 90-degree concave corners first. Those are guaranteed to be adjacent edges. Once you've found those, you can expand outward from them to find more edges that are adjacent to each other when re-combined into a cube.
+
+The trick there was realizing that, as you expand out, if you change direction following a cube edge twice, you're not longer on adjacent edges. For example, say you start at a corner. You can go up to follow one edge and left to follow the other edge from the corner. Those two edges are obviously adjacent. Then, if you turn left from the left edge and go down a new edge, and the other edge continues upward, that downward edge and the second upward edge are adjacent. However, if the first upward edge turns right and continues along an edge going to the right, that rightward edge is *not* adjacent to the downward edge (the one you got to second after going left).
+
+```
+# C and D adjacent edges      # C and D are NOT adjacent.
+
+  D.                            
+  D.                            
+  B.                              BD
+  B.                              B.
+AA..                            AA..
+C...                            C...
+```
+
+The only exception to that rule is the very last edge.
+
+It definitely would have been easier to hard-code the cube geometry. I also have a feeling it would have been easier to try to represent the cube in 3D, but I had already invested enough time in calculating the adjacent edges on the 2D version that I didn't want to try to go down the 3D route.
+
+But hey, at least this wasn't an exponential runtime problem!
+
 ## Day 21
 [Day 21 prompt](https://adventofcode.com/2022/day/21)
 
