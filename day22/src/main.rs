@@ -26,6 +26,11 @@ fn main() {
     // - The remaining edges can be found by finding the next open edge around the map after the corners are skipped.
     // - the rotation will change to be anti-normal (facing into the cube) from the edge, so I think there's no need to store
     //   rotation information.
+    let (grid, instructions) = parse(&path);
+    let mut me_2 = Me::new(grid);
+    me_2.follow_instructions_cube(&instructions);
+
+    println!("The real password is {}", me_2.password());
 }
 
 fn parse(path: &str) -> (Grid<char>, Vec<Inst>) {
@@ -127,6 +132,11 @@ impl Me {
     }
 
     fn follow_instructions(&mut self, instructions: &Vec<Inst>) {
+        let edges = self.determine_wrapping_edges();
+        self.follow_instructions_with_edges(&edges, instructions);
+    }
+
+    fn follow_instructions_with_edges(&mut self, edges: &Edges, instructions: &Vec<Inst>) {
         use Inst::*;
         for i in instructions {
             // println!("Handling {:?}", i);
@@ -134,27 +144,20 @@ impl Me {
 
             if let Move(dist) = i {
                 let mut dist_rem = *dist;
-                let mut curr = (self.r, self.c);
                 while dist_rem > 0 {
-                    let (dr, dc) = match self.d {
-                        Dir::R => (0, 1),
-                        Dir::L => (0, -1),
-                        Dir::U => (-1, 0),
-                        Dir::D => (1, 0)
+                    let curr = (self.r, self.c);
+                    let step_in_direction = add(as_i(curr), self.d.unit());
+                    let next = match edges[self.r][self.c].get(&self.d) {
+                        None => PosDir::new(step_in_direction, self.d),
+                        Some((nr, nc, nd)) => PosDir::new_u((*nr, *nc), *nd)
                     };
-    
-                    let (nr, nc) = (
-                        curr.0.checked_add_signed(dr).or(Some(self.map.rows() - 1)).unwrap() % self.map.rows(),
-                        curr.1.checked_add_signed(dc).or(Some(self.map.cols() - 1)).unwrap() % self.map.cols(),
-                    );
 
+                    let (nr, nc) = next.uPt();
                     if self.map[nr][nc] == '#' {
                         break;
-                    } else if self.map[nr][nc] == ' ' {
-                        curr = (nr, nc);
                     } else {
-                        curr = (nr, nc);
-                        (self.r, self.c) = curr;
+                        (self.r, self.c) = next.uPt();
+                        self.d = next.d;
                         dist_rem -= 1;
                     }
                 }
@@ -174,7 +177,7 @@ impl Me {
         loop {
             let norm = self.edge_normal(curr, dir);
             let mut end = curr;
-            for t in 0..face_width-1 {
+            for t in 0..face_width {
                 end = as_u(add(as_i(curr), scale(dir.unit(), t as isize)));
 
                 use Dir::*;
@@ -182,7 +185,7 @@ impl Me {
                     U => (self.map.rows() - 1, end.1),
                     D => (0, end.1),
                     L => (end.0, self.map.cols() - 1),
-                    R => (end.0 + t, 0)
+                    R => (end.0, 0)
                 };
                 while self.map[r][c] == ' ' {
                     r = match norm {
@@ -212,13 +215,7 @@ impl Me {
 
     fn follow_instructions_cube(&mut self, instructions: &Vec<Inst>) {
         let edges = self.determine_edges();
-
-        for r in 0..edges.rows() {
-            for c in 0..edges.cols() {
-                print!("{:?}", edges[r][c]);
-            }
-            println!("");
-        }
+        self.follow_instructions_with_edges(&edges, instructions);
     }
 
     fn determine_edges(&self) -> Edges {
@@ -563,8 +560,11 @@ mod tests {
         use Dir::*;
         assert_eq!(edges[0][2][&L], (0, 3, L));
         assert_eq!(edges[2][5][&R], (2, 0, R));
+        assert_eq!(edges[2][5][&U], (5, 5, U));
         assert_eq!(edges[3][1][&D], (2, 1, D));
         assert_eq!(edges[0][2][&U], (3, 2, U));
+        assert_eq!(edges[2][1][&U], (3, 1, U));
+        assert_eq!(edges[2][0][&U], (3, 0, U));
     }
 
     #[test]
@@ -623,7 +623,17 @@ mod tests {
 
     }
 
-    // #[test]
+    #[test]
+    fn day_22_part1_tiny() {
+        let (grid, instrs) = parse("tiny.txt");
+        let mut tiny_me = Me::new(grid);
+        tiny_me.follow_instructions(&instrs);
+
+        let expected_pos = Me { r: 5, c: 5, d: Dir::U, map: grid![['.']] };
+        assert_eq!(tiny_me.password(), expected_pos.password());
+    }
+
+    #[test]
     fn day_22_part2_tiny() {
         let (grid, instrs) = parse("tiny.txt");
         let mut tiny_me = Me::new(grid);
@@ -631,5 +641,23 @@ mod tests {
 
         let expected_pos = Me { r: 0, c: 3, d: Dir::L, map: grid![['.']] };
         assert_eq!(tiny_me.password(), expected_pos.password());
+    }
+
+    #[test]
+    fn day_22_part2_sample() {
+        let (grid, instrs) = parse("sample.txt");
+        let mut me = Me::new(grid);
+        me.follow_instructions_cube(&instrs);
+
+        assert_eq!(me.password(), 5031);
+    }
+
+    #[test]
+    fn day_22_part2_input() {
+        let (grid, instrs) = parse("input.txt");
+        let mut me = Me::new(grid);
+        me.follow_instructions_cube(&instrs);
+
+        assert_eq!(me.password(), 11451);
     }
 }
