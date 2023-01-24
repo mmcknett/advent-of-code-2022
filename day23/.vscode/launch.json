@@ -7,6 +7,24 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "Sample Small input day23",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=day23",
+          "--package=day23"
+        ],
+        "filter": {
+          "name": "day23",
+          "kind": "bin"
+        }
+      },
+      "args": ["./sample_small.txt"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "Sample input day23",
       "cargo": {
         "args": [
