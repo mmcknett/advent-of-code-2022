@@ -88,6 +88,7 @@ fn bfs_volume(volume: Vec<Grid<Square>>) -> Vec<V> {
 
         if curr_pos == end {
             trace.insert((exit, curr_t + 1), curr);
+            break;
         }
 
         let next_t = curr_t + 1;
