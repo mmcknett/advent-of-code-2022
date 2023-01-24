@@ -26,16 +26,16 @@ fn main() {
 
     // Part 1
     let mut elf_walk = ElfWalk::new(elves);
-    println!("{:?}", elf_walk.elves);
+    // println!("{:?}", elf_walk.elves);
 
     for _ in 0..10 {
         if let WalkResult::Done = elf_walk.run_round() {
             break;
         }
-        println!("{:?}", elf_walk.elves);
+        // println!("{:?}", elf_walk.elves);
     }
 
-    println!("Empty ground tiles: {}", elf_walk.empties());
+    println!("Empty ground tiles (110 for sample, 4254 for input): {}", elf_walk.empties());
 
     // Part 2
 }
