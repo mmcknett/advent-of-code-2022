@@ -5,6 +5,11 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 23
+[Day 23 prompt](https://adventofcode.com/2022/day/23)
+
+This one was straightforward. I felt like I was basically following the instructions directly from the prompt. The practice with using tuples for day 22 came in handy again. I wrote a pretty inefficient algorithm, but the input for part 2 in release mode ran relatively quickly (order of a few dozen seconds), so I didn't need to optimize it to get the answer.
+
 ## Day 22
 [Day 22 prompt](https://adventofcode.com/2022/day/22)
 
