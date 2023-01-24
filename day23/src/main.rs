@@ -25,7 +25,7 @@ fn main() {
         .collect();
 
     // Part 1
-    let mut elf_walk = ElfWalk::new(elves);
+    let mut elf_walk = ElfWalk::new(elves.clone());
     // println!("{:?}", elf_walk.elves);
 
     for _ in 0..10 {
@@ -35,9 +35,20 @@ fn main() {
         // println!("{:?}", elf_walk.elves);
     }
 
-    println!("Empty ground tiles (110 for sample, 4254 for input): {}", elf_walk.empties());
+    println!("Part 1: Empty ground tiles (110 for sample, 4254 for input): {}", elf_walk.empties());
 
     // Part 2
+    let mut elf_walk = ElfWalk::new(elves);
+
+    let mut round = 1;
+    while let WalkResult::Moves = elf_walk.run_round() {
+        round += 1;
+        if round % 100 == 0 {
+            println!("On round {}", round);
+        }
+    }
+
+    println!("Part 2: Round search completes (20 for sample, 992 for input): {}", round);
 }
 
 struct ElfWalk {
