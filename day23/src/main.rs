@@ -227,13 +227,3 @@ impl Dir {
 fn add(a: (i64, i64), b: (i64, i64)) -> (i64, i64) {
     (a.0 + b.0, a.1 + b.1)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day_23_test() {
-        assert_eq![1, 1]
-    }
-}
