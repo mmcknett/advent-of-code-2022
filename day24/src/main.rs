@@ -72,15 +72,19 @@ fn bfs_volume(volume: Vec<Grid<Square>>) -> Vec<V> {
     let mut q: VecDeque<PosTime> = VecDeque::new();
     let mut trace: HashMap<PosTime, PosTime> = HashMap::new();
 
-    let (width, height) = (volume[0].cols(), volume[0].rows());
+    let (width, height) = (volume[0].cols() as i16, volume[0].rows() as i16);
 
     // Start at 1 minute, because at time 0 we moved down into the board.
-    let mut curr = (V::new(0, 0), 1u64);
-    let end = V::new(width as i16 - 1, height as i16 - 1);
-    let exit = V::new(width as i16 - 1, height as i16);
+    let entry = V::new(0, -1);
+    let start = V::new(0, 0);
+    let start_time = 0;
+    let end = V::new(width - 1, height - 1);
+    let exit = V::new(width - 1, height);
+
+    let mut curr = (start, start_time + 1);
 
     q.push_back(curr);
-    trace.insert((V::new(0, 0), 1), (V::new(0, -1), 0));
+    trace.insert((start, start_time + 1), (entry, start_time));
 
     while !q.is_empty() {
         curr = q.pop_front().unwrap();
@@ -99,12 +103,13 @@ fn bfs_volume(volume: Vec<Grid<Square>>) -> Vec<V> {
                          (Dir::Wait, next_t)];
         for (next_dir, next_t) in next_list {
             let next_pos = curr_pos + next_dir.unit();
-            let (r, c) = next_pos.rc();
-            let t = (next_t % volume.len() as u64) as usize;
 
-            if next_pos.x < 0 || next_pos.y < 0 || r >= volume[t].rows() || c >= volume[t].cols() {
+            if next_pos.x < 0 || next_pos.y < 0 || next_pos.y >= height || next_pos.x >= width {
                 continue;
             }
+
+            let (r, c) = next_pos.rc();
+            let t = (next_t % volume.len() as u64) as usize;
 
             // If we haven't visited the next square in spacetime and it's open, visit it.
             let next = (next_pos, t as u64);
@@ -119,7 +124,7 @@ fn bfs_volume(volume: Vec<Grid<Square>>) -> Vec<V> {
 
     let mut path = vec![];
     // Find the time in the traceback where we landed at the end.
-    let mut curr = trace.iter().find(|((start, _), _)| start == &exit).unwrap().0;
+    let mut curr = trace.iter().find(|((from, _), _)| from == &exit).unwrap().0;
     path.push(curr.0);
 
     while let Some(next) = trace.get(&curr) {
