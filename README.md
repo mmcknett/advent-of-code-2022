@@ -5,6 +5,17 @@ I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.m
 
 # Solution Log
 
+## Day 24
+[Day 24 prompt](https://adventofcode.com/2022/day/24)
+
+BFS day again! But today's was another slog for me. I pretty quickly realized that the "blizzards" repeating was going to mean that I didn't have to simulate the board state forever, and I could cut off simulating it at `t = width * height`. (Technically, the LCM of width & height, but for the puzzle input they're mutually prime.) I could also easily calculate the position of any given blizzard at time `t`.
+
+The easiest way for me to think about finding the shortest path through the grid was to calculate all `width * height` boards and do a breadth-first search through the volume, layer by layer. For that, I rendered all the blizzards to a grid as a "wall" if there was a blizzard present at that time and "open" if not, and then did the usual breadth-first search where you don't go outside the bounds of the grid and don't visit walled squares.
+
+It just took forever to actually write everything out! It made me think I might have saved time if I had had a super generic BFS algorithm that let me provide adjacency rules (and which worked in 3D).
+
+Part 2 was conceptually simple; just modify the part 1 algorithm to do paths multiple times. Unfortunately, I ran into a bunch of off-by-one errors I had to debug, and then I realized that one of my original assumptions (that you can immediately move into the board) was wrong...but only for the sample. I ended up solving the puzzle input before having a solution that worked for the sample.
+
 ## Day 23
 [Day 23 prompt](https://adventofcode.com/2022/day/23)
 

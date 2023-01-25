@@ -187,10 +187,6 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
     }
 
     let mut path = vec![];
-    // if curr.0 != exit {
-    //     return path; // There's no path.
-    // }
-
     path.push(curr);
 
     while let Some(next) = trace.get(&curr) {
