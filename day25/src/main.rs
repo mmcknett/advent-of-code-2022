@@ -61,16 +61,15 @@ fn carry(d: i64) -> (i64, i64) {
         3 => (1, -2),
         4 => (1, -1),
         5 => (1, 0),
-        6 => (1, 1),
         _ => panic!("Invalid digit")
     }
 }
 
 fn to_snafu(input: i64) -> String {
     // First, turn the decimal number into a list of base-5 digits (0-4).
-    // Then, convert 3s and 4s into the snafu format by carrying a 1 or 2.
-    // 222 + 1 --> 223 --> 23= --> 3== --> 1===
-    // 222 + 2 --> 224 --> 23- --> 3=- --> 1==-
+    // Then, convert 3s and 4s into the snafu format by carrying a 1.
+    // 223 --> 23= --> 3== --> 1===
+    // 224 --> 23- --> 3=- --> 1==-
 
     // The first digit in the list will be the least-significant digit.
     let mut digits: Vec<i64> = vec![];
@@ -85,7 +84,7 @@ fn to_snafu(input: i64) -> String {
     }
 
     // Handle carrying
-    // e.g. 444 --> 4(4+2)- --> (4+1)(1)- --> 
+    // e.g. 444 --> (4)(4)(4) --> 4(4+1)(-1) --> (4+1)(0)(-1) --> (1)(0)(0)(-1) --> 100-
     let mut carry_val = 0;
     for d in &mut digits {
         (carry_val, *d) = carry(*d + carry_val);

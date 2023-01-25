@@ -1,9 +1,22 @@
 # Advent of Code 2022 solutions
 For this year, I decided to use [Advent of Code](https://adventofcode.com/2022) to do more Rust practice. I decided to get a head start by learning how to do some of the more complex parsing tasks and data structures ahead of time, since it's a big struggle to learn those while also trying to solve the harder AoC puzzles. Those will go in [utils](./utils/), and there's a little module for trying things out in [testbed](./testbed/).
 
-I'm keeping steps for quickly bootstrapping a solution in [setup](./docs/setup.md). I'll plan on keeping a running log of solutions and days here as well.
+I put steps for quickly bootstrapping solutions in [setup](./docs/setup.md). I kept a running log of solutions in this readme as well.
+
+Plug for Rust: I really enjoyed using the language for these toy problems! It's much more ergonomic than C++, both from the perspective of using the type system and from the perspective of generating correct code once it compiles. I frequently found myself producing correct code once the code successfully compiled. The compiler also prevented me from introducing incorrect behavior once, such as preventing me from using a reference in a dependent function to a list that I had mutably borrowed. (I've had that error in production code before; it's very hard to track down!) 
 
 # Solution Log
+
+## Day 25
+[Day 25 prompt](https://adventofcode.com/2022/day/25)
+
+The last one was a short one. At first I misunderstood the problem (I thought the powers of 5 were alternating their sign), but test cases quickly corrected that mistake. I decided the easiest way for me to get my head around this would be to turn the number into a base-5 number first, then correct that into a "snafu" number. The tricky part there is figuring out how to adjust the more-significant values of a number based on the least significant value adjustments. That wasn't too bad, as you can actually only carry at most 1 out of a less-significant place. So for example, the largest base-5 number less than 1000, 444, gets converted like...
+
+```
+444 --> (4)(4)(4) --> 4(4+1)(-1) --> (4+1)(0)(-1) --> (1)(0)(0)(-1) --> 100-
+```
+
+So breaking it into converting to a list of base 5 digits, then transforming to a snafu number, made it pretty simple.
 
 ## Day 24
 [Day 24 prompt](https://adventofcode.com/2022/day/24)
