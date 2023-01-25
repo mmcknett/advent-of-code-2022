@@ -28,6 +28,8 @@ fn main() {
     println!("Part 1: Fewest minutes required is {}", shortest_path.len() - 1);
 
     // Part 2
+    // I think part of this path violates the assumption that you can immediately move off the starting square.
+    // For the path backward, you might have to wait.
     let shortest_path = path_to_end_then_start_then_end(&board_vol);
     println!("Part 2: Fewest minutes required for a return to start and back is {}", shortest_path.len() - 1);
 }
@@ -75,7 +77,7 @@ fn board_at_t(blizzards: &Vec<Blizz>, board_size: (usize, usize), t: u64) -> Gri
 
 type PosTime = (V, u64);
 
-fn path_to_end(volume: &Vec<Grid<Square>>) -> Vec<V> {
+fn path_to_end(volume: &Vec<Grid<Square>>) -> Vec<PosTime> {
     let (width, height) = (volume[0].cols() as i16, volume[0].rows() as i16);
     let entry = V::new(0, -1);
     let start = V::new(0, 0);
@@ -85,7 +87,7 @@ fn path_to_end(volume: &Vec<Grid<Square>>) -> Vec<V> {
     bfs_volume(volume, entry, start, end, exit, start_time)
 }
 
-fn path_to_end_then_start_then_end(volume: &Vec<Grid<Square>>) -> Vec<V> {
+fn path_to_end_then_start_then_end(volume: &Vec<Grid<Square>>) -> Vec<PosTime> {
     let (width, height) = (volume[0].cols() as i16, volume[0].rows() as i16);
     let entry = V::new(0, -1);
     let start = V::new(0, 0);
@@ -93,27 +95,39 @@ fn path_to_end_then_start_then_end(volume: &Vec<Grid<Square>>) -> Vec<V> {
     let end = V::new(width - 1, height - 1);
     let exit = V::new(width - 1, height);
 
-    let there = bfs_volume(volume, entry, start, end, exit, start_time);
-    let start_time_back = there.len() as u64;
+    let print_path = |path: &Vec<PosTime>| {
+        for (p, t) in path {
+            println!("{t}: {p:?}");
+        }
+    };
 
+    let there = bfs_volume(volume, entry, start, end, exit, start_time);
+    print_path(&there);
+
+    let start_time_back = there.len() as u64 + start_time;
     println!("Time there: {}", start_time_back - 1);
 
-    let back = bfs_volume(volume, exit, end, start, entry, start_time_back);
-    let start_time_there_again = back.len() as u64;
+    let back = bfs_volume(volume, exit, end, start, entry, start_time_back - 1);
+    print_path(&back);
 
+    let start_time_there_again = back.len() as u64 + start_time_back - 1;
     println!("Time back again: {}", start_time_there_again - 1);
 
-    let there_again = bfs_volume(volume, entry, start, end, exit, start_time_there_again);
+    let there_again = bfs_volume(volume, entry, start, end, exit, start_time_there_again - 1);
+    print_path(&there_again);
+
+    let end_time = there_again.len() as u64 + start_time_there_again - 1;
+    println!("Time there again: {}", end_time - 1);
 
     let mut result = vec![];
     result.extend(&there);
-    result.extend(&back);
-    result.extend(&there_again);
+    result.extend(back.iter().skip(1));
+    result.extend(there_again.iter().skip(1));
 
     return result;
 }
 
-fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, start_time: u64) -> Vec<V> {
+fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, start_time: u64) -> Vec<PosTime> {
     let mut q: VecDeque<PosTime> = VecDeque::new();
     let mut trace: HashMap<PosTime, PosTime> = HashMap::new();
 
@@ -129,7 +143,9 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
         let (curr_pos, curr_t) = curr;
 
         if curr_pos == end {
-            trace.insert((exit, curr_t + 1), curr);
+            let last = (exit, curr_t + 1);
+            trace.insert(last, curr);
+            curr = last;
             break;
         }
 
@@ -142,7 +158,9 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
         for (next_dir, next_t) in next_list {
             let next_pos = curr_pos + next_dir.unit();
 
-            if next_pos.x < 0 || next_pos.y < 0 || next_pos.y >= height || next_pos.x >= width {
+            if next_pos.x < 0 || next_pos.y < 0 ||
+               next_pos.x >= width || next_pos.y >= height
+            {
                 continue;
             }
 
@@ -161,13 +179,15 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
     }
 
     let mut path = vec![];
-    // Find the time in the traceback where we landed at the end.
-    let mut curr = trace.iter().find(|((from, _), _)| from == &exit).unwrap().0;
-    path.push(curr.0);
+    // if curr.0 != exit {
+    //     return path; // There's no path.
+    // }
+
+    path.push(curr);
 
     while let Some(next) = trace.get(&curr) {
-        path.push(next.0);
-        curr = next;
+        path.push(*next);
+        curr = *next;
     }
 
     path.reverse();
@@ -406,8 +426,10 @@ mod tests {
         let (blizzards, board_size) = parse("sample.txt");
         let board_at_0 = board_at_t(&blizzards, board_size, 0);
         let board_at_1 = board_at_t(&blizzards, board_size, 1);
-        let board_at_lcm = board_at_t(&blizzards, board_size, (board_size.0 * board_size.1) as u64);
-        let board_at_lcm_plus_one = board_at_t(&blizzards, board_size, (board_size.0 * board_size.1) as u64 + 1);
+        let board_at_lcm = board_at_t(&blizzards, board_size, 24);
+        let board_at_lcm_plus_one = board_at_t(&blizzards, board_size, 25);
+
+        assert_eq!(board_size.0 * board_size.1, 24);
         assert_eq!(board_at_0, board_at_lcm);
         assert_eq!(board_at_1, board_at_lcm_plus_one);
     }
@@ -425,6 +447,33 @@ mod tests {
         let (blizzards, board_size) = parse("input.txt");
         let board_vol = board_volume(&blizzards, board_size);
         let shortest_path = path_to_end(&board_vol);
+
         assert_eq!(shortest_path.len() - 1, 260);
+    }
+
+    #[test]
+    fn part2_sample_simple() {
+        let (blizzards, board_size) = parse("sample_simple.txt");
+        let board_vol = board_volume(&blizzards, board_size);
+        let shortest_path = path_to_end_then_start_then_end(&board_vol);
+        assert_eq!(shortest_path.len() - 1, 30);
+    }
+
+    #[test]
+    fn part2_sample() {
+        let (blizzards, board_size) = parse("sample.txt");
+        let board_vol = board_volume(&blizzards, board_size);
+        let shortest_path = path_to_end_then_start_then_end(&board_vol);
+
+        assert_eq!(shortest_path.len() - 1, 54);
+    }
+
+    #[test]
+    fn part2_input() {
+        let (blizzards, board_size) = parse("input.txt");
+        let board_vol = board_volume(&blizzards, board_size);
+        let shortest_path = path_to_end_then_start_then_end(&board_vol);
+
+        assert_eq!(shortest_path.len() - 1, 747);
     }
 }
