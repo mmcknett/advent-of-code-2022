@@ -101,23 +101,29 @@ fn path_to_end_then_start_then_end(volume: &Vec<Grid<Square>>) -> Vec<PosTime> {
         }
     };
 
+    // Go the end.
     let there = bfs_volume(volume, entry, start, end, exit, start_time);
     print_path(&there);
 
-    let start_time_back = there.len() as u64 + start_time;
-    println!("Time there: {}", start_time_back - 1);
+    let time_there = there.len() as u64 - 1;
+    println!("Time there: {}", time_there);
 
-    let back = bfs_volume(volume, exit, end, start, entry, start_time_back - 1);
+    // Come back to the start.
+    let start_time_back = time_there + start_time;
+    let back = bfs_volume(volume, exit, end, start, entry, start_time_back);
     print_path(&back);
 
-    let start_time_there_again = back.len() as u64 + start_time_back - 1;
-    println!("Time back again: {}", start_time_there_again - 1);
+    let time_back_again = back.len() as u64 - 1;
+    let start_time_there_again = time_back_again + start_time_back;
+    println!("Time back again: {}", time_back_again);
 
-    let there_again = bfs_volume(volume, entry, start, end, exit, start_time_there_again - 1);
+    // Go back to the end again.
+    let there_again = bfs_volume(volume, entry, start, end, exit, start_time_there_again);
     print_path(&there_again);
 
-    let end_time = there_again.len() as u64 + start_time_there_again - 1;
-    println!("Time there again: {}", end_time - 1);
+    let time_there_again = there_again.len() as u64 - 1;
+    let end_time = time_there_again + start_time_there_again;
+    println!("Time there again: {}", time_there_again);
 
     let mut result = vec![];
     result.extend(&there);
@@ -133,10 +139,8 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
 
     let (width, height) = (volume[0].cols() as i16, volume[0].rows() as i16);
 
-    let mut curr = (start, start_time + 1);
-
+    let mut curr = (entry, start_time);
     q.push_back(curr);
-    trace.insert((start, start_time + 1), (entry, start_time));
 
     while !q.is_empty() {
         curr = q.pop_front().unwrap();
@@ -157,22 +161,26 @@ fn bfs_volume(volume: &Vec<Grid<Square>>, entry: V, start: V, end: V, exit: V, s
                          (Dir::Wait, next_t)];
         for (next_dir, next_t) in next_list {
             let next_pos = curr_pos + next_dir.unit();
+            let next = (next_pos, next_t);
 
-            if next_pos.x < 0 || next_pos.y < 0 ||
-               next_pos.x >= width || next_pos.y >= height
+            if next_pos.x >= 0 && next_pos.y >= 0 &&
+               next_pos.x < width && next_pos.y < height
             {
-                continue;
+                let (r, c) = next_pos.rc();
+                let t = (next_t % volume.len() as u64) as usize;
+
+                // If we haven't visited the next square in spacetime and it's open, visit it.
+                if trace.get(&next).is_none() &&
+                   *volume[t].get(r, c).unwrap() == Square::Open
+                {
+                    trace.insert(next, curr);
+                    q.push_back(next);
+                }
             }
 
-            let (r, c) = next_pos.rc();
-            let t = (next_t % volume.len() as u64) as usize;
-
-            // If we haven't visited the next square in spacetime and it's open, visit it.
-            let next = (next_pos, next_t);
-            if trace.get(&next).is_none() &&
-               *volume[t].get(r, c).unwrap() == Square::Open
-            {
-                trace.insert(next, (curr_pos, curr_t));
+            // Handle waiting at the entry.
+            if next_pos == entry && next_dir == Dir::Wait {
+                trace.insert(next, curr);
                 q.push_back(next);
             }
         }
