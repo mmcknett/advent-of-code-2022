@@ -104,7 +104,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn day_25_test() {
+    fn part1_sample() {
         let nums = parse("sample.txt");
         let dec_nums: Vec<i64> = nums.into_iter().map(|s| from_snafu(&s)).collect();
         assert_eq!(dec_nums,
@@ -128,5 +128,14 @@ mod tests {
         assert_eq!(sum, 4890);
 
         assert_eq!(to_snafu(sum), "2=-1=0");
+    }
+
+    #[test]
+    fn part1_input() {
+        let nums = parse("input.txt");
+        let dec_nums: Vec<i64> = nums.into_iter().map(|s| from_snafu(&s)).collect();
+        let sum: i64 = dec_nums.iter().sum();
+
+        assert_eq!(to_snafu(sum), "2=--00--0220-0-21==1");
     }
 }
